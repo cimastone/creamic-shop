@@ -1,0 +1,59 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /product
+
+spring:
+  application:
+    name: ceramic-shop-product
+  datasource:
+    url: jdbc:mysql://localhost:3306/ceramic_shop?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: sycpwd123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1 FROM DUAL
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      filters: stat,wall
+      max-pool-prepared-statement-per-connection-size: 20
+      use-global-data-source-stat: true
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=500
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+  swagger:
+    enable: false
+
+# Swagger配置
+springfox:
+  documentation:
+    enabled: false
+    auto-startup: false
+    swagger-ui:
+      enabled: false
+
+# MyBatis配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.ceramic.product.domain.entity
+  configuration:
+    cache-enabled: true
+    use-generated-keys: true
+    default-executor-type: REUSE
+    use-actual-parameter-name: true
+    map-underscore-to-camel-case: true
+    
+logging:
+  level:
+    com.ceramic.product: debug
+    org.springframework: info 

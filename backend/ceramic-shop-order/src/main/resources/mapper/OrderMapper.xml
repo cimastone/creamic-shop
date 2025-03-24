@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceramicshop.order.infrastructure.mapper.OrderMapper">
+
+    <!-- 订单基础ResultMap -->
+    <resultMap id="BaseResultMap" type="com.ceramicshop.order.infrastructure.po.OrderPO">
+        <id column="id" property="id"/>
+        <result column="order_no" property="orderNumber"/>
+        <result column="user_id" property="userId"/>
+        <result column="status" property="status"/>
+        <result column="total_amount" property="totalAmount"/>
+        <result column="payment_amount" property="paymentAmount"/>
+        <result column="shipping_fee" property="shippingFee"/>
+        <result column="discount_amount" property="discountAmount"/>
+        <result column="payment_time" property="payTime"/>
+        <result column="shipping_time" property="shipTime"/>
+        <result column="delivery_time" property="deliveryTime"/>
+        <result column="completion_time" property="completeTime"/>
+        <result column="cancellation_time" property="closeTime"/>
+        <result column="shipping_address_id" property="addressId"/>
+        <result column="shipping_method" property="shippingMethod"/>
+        <result column="payment_method" property="paymentMethod"/>
+        <result column="note" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 基础的列 -->
+    <sql id="Base_Column_List">
+        id, order_no, user_id, status, total_amount, payment_amount, shipping_fee, discount_amount,
+        payment_time, shipping_time, delivery_time, completion_time, cancellation_time,
+        shipping_address_id, shipping_method, payment_method, note, create_time, update_time
+    </sql>
+
+    <!-- 插入订单 -->
+    <insert id="insert" parameterType="com.ceramicshop.order.infrastructure.po.OrderPO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `order` (
+            order_no, user_id, status, total_amount, payment_amount, shipping_fee, discount_amount,
+            payment_time, shipping_time, delivery_time, completion_time, cancellation_time,
+            shipping_address_id, shipping_method, payment_method, note, create_time, update_time
+        ) VALUES (
+            #{orderNumber}, #{userId}, #{status}, #{totalAmount}, #{paymentAmount}, #{shippingFee}, #{discountAmount},
+            #{payTime}, #{shipTime}, #{deliveryTime}, #{completeTime}, #{closeTime},
+            #{addressId}, #{shippingMethod}, #{paymentMethod}, #{remark}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 根据ID查询订单 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM `order`
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据订单号查询订单 -->
+    <select id="selectByOrderNumber" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM `order`
+        WHERE order_no = #{orderNumber}
+    </select>
+
+    <!-- 根据用户ID查询订单列表 -->
+    <select id="selectByUserId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM `order`
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据用户ID和订单状态查询订单列表 -->
+    <select id="selectByUserIdAndStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM `order`
+        WHERE user_id = #{userId} AND status = #{status}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 更新订单 -->
+    <update id="update" parameterType="com.ceramicshop.order.infrastructure.po.OrderPO">
+        UPDATE `order`
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="totalAmount != null">total_amount = #{totalAmount},</if>
+            <if test="paymentAmount != null">payment_amount = #{paymentAmount},</if>
+            <if test="shippingFee != null">shipping_fee = #{shippingFee},</if>
+            <if test="discountAmount != null">discount_amount = #{discountAmount},</if>
+            <if test="payTime != null">payment_time = #{payTime},</if>
+            <if test="shipTime != null">shipping_time = #{shipTime},</if>
+            <if test="deliveryTime != null">delivery_time = #{deliveryTime},</if>
+            <if test="completeTime != null">completion_time = #{completeTime},</if>
+            <if test="closeTime != null">cancellation_time = #{closeTime},</if>
+            <if test="addressId != null">shipping_address_id = #{addressId},</if>
+            <if test="logisticsId != null">shipping_id = #{logisticsId},</if>
+            <if test="shippingMethod != null">shipping_method = #{shippingMethod},</if>
+            <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
+            <if test="remark != null">note = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除订单 -->
+    <delete id="deleteById">
+        DELETE FROM `order` WHERE id = #{id}
+    </delete>
+</mapper> 

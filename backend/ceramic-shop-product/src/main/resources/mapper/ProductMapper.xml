@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceramic.product.infrastructure.persistence.mapper.ProductMapper">
+    
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, name, description, price, category, image, stock, status, create_time, update_time
+    </sql>
+    
+    <!-- 根据ID查询产品 -->
+    <select id="selectById" parameterType="long" resultType="com.ceramic.product.infrastructure.persistence.entity.ProductPO">
+        SELECT <include refid="Base_Column_List" />
+        FROM product
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 查询所有产品 -->
+    <select id="selectAll" resultType="com.ceramic.product.infrastructure.persistence.entity.ProductPO">
+        SELECT <include refid="Base_Column_List" />
+        FROM product
+    </select>
+    
+    <!-- 根据分类查询产品 -->
+    <select id="selectByCategory" parameterType="string" resultType="com.ceramic.product.infrastructure.persistence.entity.ProductPO">
+        SELECT <include refid="Base_Column_List" />
+        FROM product
+        WHERE category = #{category}
+    </select>
+    
+    <!-- 根据名称模糊查询 -->
+    <select id="selectByNameLike" parameterType="string" resultType="com.ceramic.product.infrastructure.persistence.entity.ProductPO">
+        SELECT <include refid="Base_Column_List" />
+        FROM product
+        WHERE name LIKE CONCAT('%', #{namePattern}, '%')
+    </select>
+    
+    <!-- 插入产品 -->
+    <insert id="insert" parameterType="com.ceramic.product.infrastructure.persistence.entity.ProductPO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product (
+            name, description, price, category, image, stock, status, create_time, update_time
+        ) VALUES (
+            #{name}, #{description}, #{price}, #{category}, #{image}, #{stock}, #{status}, #{createTime}, #{updateTime}
+        )
+    </insert>
+    
+    <!-- 更新产品 -->
+    <update id="update" parameterType="com.ceramic.product.infrastructure.persistence.entity.ProductPO">
+        UPDATE product
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除产品 -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM product WHERE id = #{id}
+    </delete>
+    
+    <!-- 更新产品状态 -->
+    <update id="updateStatus">
+        UPDATE product
+        SET status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 查询所有分类 -->
+    <select id="selectAllCategories" resultType="string">
+        SELECT DISTINCT category
+        FROM product
+        ORDER BY category
+    </select>
+    
+    <!-- 更新库存 -->
+    <update id="updateStock">
+        UPDATE product
+        SET stock = #{stock}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 用于悲观锁的查询 -->
+    <select id="selectByIdForUpdate" parameterType="long" resultType="com.ceramic.product.infrastructure.persistence.entity.ProductPO">
+        SELECT <include refid="Base_Column_List" />
+        FROM product
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+    
+</mapper> 

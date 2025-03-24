@@ -1,0 +1,69 @@
+server:
+  port: 8082
+  servlet:
+    context-path: /user
+
+spring:
+  application:
+    name: ceramic-shop-user
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://localhost:3306/ceramic_shop?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: sycpwd123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    druid:
+      # 初始连接数
+      initial-size: 5
+      # 最小连接池数量
+      min-idle: 5
+      # 最大连接池数量
+      max-active: 20
+      # 获取连接超时时间
+      max-wait: 60000
+      # 检测连接是否有效
+      validation-query: SELECT 1 FROM DUAL
+      # 申请连接时执行validationQuery检测连接是否有效
+      test-on-borrow: false
+      # 归还连接时执行validationQuery检测连接是否有效
+      test-on-return: false
+      # 申请连接的时候检测，如果空闲时间大于timeBetweenEvictionRunsMillis，执行validationQuery检测连接是否有效
+      test-while-idle: true
+      # 配置监控统计拦截的filters，去掉后监控界面sql无法统计
+      filters: stat,wall
+      # 合并多个DruidDataSource的监控数据
+      use-global-data-source-stat: true
+  # Spring Boot 2.7与Springfox兼容性配置
+  mvc:
+    pathmatch:
+      matching-strategy: ANT_PATH_MATCHER
+
+mybatis:
+  # 配置mapper的扫描，找到所有的mapper.xml映射文件
+  mapper-locations: classpath:mapper/**/*.xml
+  # 搜索指定包别名
+  type-aliases-package: com.ceramic.user.domain.model
+  # 加载全局的配置文件
+  configuration:
+    # 开启驼峰命名
+    map-underscore-to-camel-case: true
+    # 开启二级缓存
+    cache-enabled: true
+
+# PageHelper分页插件
+pagehelper:
+  helperDialect: mysql
+  reasonable: true
+  supportMethodsArguments: true
+  params: count=countSql
+
+# 日志配置
+logging:
+  level:
+    com.ceramic.user: debug
+    org.springframework: warn
+  file:
+    name: logs/spring.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n" 

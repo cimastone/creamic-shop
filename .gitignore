@@ -1,0 +1,89 @@
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 编辑器和IDE文件
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+*.iml
+*.iws
+*.ipr
+.factorypath
+
+# 前端文件
+# 依赖
+/frontend/node_modules/
+/frontend/.pnp
+/frontend/.pnp.js
+
+# 构建目录
+/frontend/dist/
+/frontend/build/
+/frontend/coverage/
+
+# 本地环境文件
+/frontend/.env.local
+/frontend/.env.development.local
+/frontend/.env.test.local
+/frontend/.env.production.local
+
+# 日志
+/frontend/npm-debug.log*
+/frontend/yarn-debug.log*
+/frontend/yarn-error.log*
+
+# 后端文件
+# 编译的class文件
+*.class
+
+# Maven
+/backend/target/
+/backend/**/target/
+/backend/.mvn/wrapper/maven-wrapper.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Spring Boot
+/backend/*.log
+/backend/logs/
+/backend/**/logs/
+/backend/application-*.properties
+/backend/application-*.yml
+/backend/application-*.yaml
+/backend/.env
+
+# Gradle
+/backend/.gradle
+/backend/build/
+
+# 包文件
+/package-lock.json
+/yarn.lock
+
+# 日志文件
+/logs/
+*.log
+log/
+logs/
+
+# 其他
+.env
+.env.*
+!.env.example
+.cache/
+tmp/
+temp/ 

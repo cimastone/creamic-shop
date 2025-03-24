@@ -1,0 +1,22 @@
+-- 插入测试产品数据
+INSERT INTO product (name, description, price, category, image, stock, status) VALUES
+('青花瓷花瓶', '传统手工制作的青花瓷花瓶，采用优质瓷土烧制而成，纯手工绘制青花图案。', 299.00, 'vases', 'https://example.com/images/qinghua-vase.jpg', 100, 'ONLINE'),
+('陶瓷茶具套装', '精美陶瓷茶具套装，包含茶壶、茶杯、茶盘等，适合家庭或茶馆使用。', 499.00, 'cups', 'https://example.com/images/tea-set.jpg', 50, 'ONLINE'),
+('创意陶瓷杯子', '简约风格创意陶瓷杯子，手感舒适，容量适中，适合日常使用。', 59.00, 'cups', 'https://example.com/images/ceramic-cup.jpg', 200, 'ONLINE'),
+('陶瓷餐具套装', '高档陶瓷餐具套装，包含4个碗、4个盘子、4双筷子，适合家庭使用。', 399.00, 'plates', 'https://example.com/images/dining-set.jpg', 30, 'ONLINE'),
+('手工陶瓷花盆', '手工制作的陶瓷花盆，质地细腻，造型独特，适合各种室内植物。', 129.00, 'vases', 'https://example.com/images/flower-pot.jpg', 80, 'ONLINE'),
+('釉下彩瓷盘', '精美釉下彩装饰瓷盘，可用于摆设或日常使用，图案精美。', 199.00, 'plates', 'https://example.com/images/ceramic-plate.jpg', 45, 'ONLINE'),
+('陶瓷调味罐', '精致陶瓷调味罐套装，包含3个小罐，适合存放盐、糖、胡椒等调味品。', 89.00, 'bowls', 'https://example.com/images/spice-jar.jpg', 60, 'ONLINE'),
+('紫砂茶壶', '宜兴紫砂茶壶，纯手工制作，容量适中，适合泡各种茶叶。', 599.00, 'cups', 'https://example.com/images/zisha-pot.jpg', 20, 'ONLINE'),
+('陶瓷酒具套装', '中式陶瓷酒具套装，包含酒壶、酒杯，精美雅致，适合品酒。', 359.00, 'cups', 'https://example.com/images/wine-set.jpg', 25, 'ONLINE'),
+('陶瓷小雕塑', '手工陶瓷小雕塑，造型生动，可作为家居装饰品。', 259.00, 'vases', 'https://example.com/images/ceramic-sculpture.jpg', 15, 'ONLINE'),
+('中式陶瓷灯具', '手工制作的中式陶瓷灯具，灯罩采用优质陶瓷制作，散发柔和灯光。', 699.00, 'vases', 'https://example.com/images/ceramic-lamp.jpg', 10, 'OFFLINE'),
+('陶瓷首饰盒', '精致陶瓷首饰盒，精美图案，内部设计合理，适合存放各种首饰。', 159.00, 'bowls', 'https://example.com/images/jewelry-box.jpg', 40, 'ONLINE'),
+('陶瓷香炉', '传统陶瓷香炉，造型古朴，适合焚香使用。', 189.00, 'bowls', 'https://example.com/images/incense-burner.jpg', 30, 'ONLINE'),
+('白瓷餐盘套装', '简约白瓷餐盘套装，包含不同大小的盘子，适合日常使用。', 299.00, 'plates', 'https://example.com/images/white-plates.jpg', 50, 'ONLINE'),
+('陶瓷咖啡杯套装', '精致陶瓷咖啡杯套装，包含4个杯子和4个碟子，适合品味咖啡。', 259.00, 'cups', 'https://example.com/images/coffee-cup-set.jpg', 35, 'ONLINE'),
+('手绘陶瓷水壶', '手绘陶瓷水壶，容量1.5L，适合盛装凉白开或果汁。', 179.00, 'cups', 'https://example.com/images/water-pot.jpg', 25, 'OFFLINE'),
+('陶瓷调料碟', '小巧陶瓷调料碟套装，包含6个小碟，适合放置调料或小菜。', 69.00, 'bowls', 'https://example.com/images/sauce-dish.jpg', 100, 'ONLINE'),
+('陶瓷鱼缸', '手工制作的陶瓷鱼缸，造型独特，适合养殖小型观赏鱼或水培植物。', 399.00, 'vases', 'https://example.com/images/fish-tank.jpg', 15, 'ONLINE'),
+('陶瓷门把手', '精美陶瓷门把手，多种图案可选，为家居增添艺术气息。', 99.00, 'vases', 'https://example.com/images/door-knob.jpg', 60, 'OFFLINE'),
+('陶瓷蜡烛台', '手工陶瓷蜡烛台，设计精美，适合摆放装饰或使用蜡烛。', 149.00, 'vases', 'https://example.com/images/candle-holder.jpg', 40, 'ONLINE');

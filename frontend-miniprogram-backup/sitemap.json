@@ -1,0 +1,7 @@
+{
+  "desc": "关于陶瓷商城的sitemap",
+  "rules": [{
+    "action": "allow",
+    "page": "*"
+  }]
+} 
