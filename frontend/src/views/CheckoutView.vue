@@ -5,12 +5,15 @@
     <div class="checkout-content" v-if="cart.items.length > 0">
       <div class="address-section">
         <h2>收货地址</h2>
-        <div class="address-form">
+        <div v-if="useAddressSelector">
+          <AddressSelector v-model="selectedAddressId" />
+        </div>
+        <div v-else class="address-form">
           <div class="form-group">
             <label>收货人</label>
             <input 
               type="text" 
-              v-model="orderInfo.recipientName" 
+              v-model="manualAddress.receiverName" 
               placeholder="请输入收货人姓名"
             />
           </div>
@@ -18,7 +21,7 @@
             <label>联系电话</label>
             <input 
               type="text" 
-              v-model="orderInfo.recipientPhone" 
+              v-model="manualAddress.receiverPhone" 
               placeholder="请输入联系电话"
             />
           </div>
@@ -26,9 +29,12 @@
             <label>详细地址</label>
             <input 
               type="text" 
-              v-model="orderInfo.recipientAddress" 
+              v-model="manualAddress.receiverAddress" 
               placeholder="请输入详细地址"
             />
+          </div>
+          <div class="form-actions">
+            <button @click="toggleAddressMode" class="toggle-btn">切换到地址选择</button>
           </div>
         </div>
       </div>
@@ -111,24 +117,43 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import { createOrder } from '@/api/order'
 
+// 有条件地导入 AddressSelector 组件
+let AddressSelector = null;
+try {
+  AddressSelector = require('@/components/AddressSelector.vue').default;
+} catch (error) {
+  console.error('加载地址选择器组件失败:', error);
+}
+
 const router = useRouter()
 const cart = useCartStore()
 const userStore = useUserStore()
 const isSubmitting = ref(false)
+const selectedAddressId = ref(null)
+const useAddressSelector = ref(!!AddressSelector) // 根据组件是否加载成功来决定使用哪种模式
+
+// 手动输入地址（备选方案）
+const manualAddress = ref({
+  receiverName: '',
+  receiverPhone: '',
+  receiverAddress: ''
+})
 
 const orderInfo = ref({
-  recipientName: '',
-  recipientPhone: '',
-  recipientAddress: '',
   paymentMethod: 'ALIPAY',
   note: ''
 })
+
+// 切换地址模式
+const toggleAddressMode = () => {
+  useAddressSelector.value = !useAddressSelector.value
+}
 
 // 获取商品总价
 const totalAmount = computed(() => {
@@ -142,11 +167,15 @@ const shippingFee = computed(() => {
 
 // 表单验证
 const isFormValid = computed(() => {
-  return (
-    orderInfo.value.recipientName.trim() !== '' &&
-    orderInfo.value.recipientPhone.trim() !== '' &&
-    orderInfo.value.recipientAddress.trim() !== ''
-  )
+  if (useAddressSelector.value) {
+    return selectedAddressId.value !== null;
+  } else {
+    return (
+      manualAddress.value.receiverName.trim() !== '' &&
+      manualAddress.value.receiverPhone.trim() !== '' &&
+      manualAddress.value.receiverAddress.trim() !== ''
+    );
+  }
 })
 
 // 返回购物车
@@ -167,39 +196,120 @@ const submitOrder = async () => {
   }
 
   if (!isFormValid.value) {
+    alert(useAddressSelector.value ? '请选择收货地址' : '请填写完整的收货信息');
     return
   }
 
   isSubmitting.value = true
   
   try {
-    const orderData = {
-      userId: userStore.userInfo.id,
-      orderItems: cart.items.map(item => ({
-        productId: item.id,
-        productName: item.name,
-        productImage: item.image,
-        unitPrice: item.price,
-        quantity: item.quantity,
-        specs: item.specs || '默认规格'
-      })),
-      recipientName: orderInfo.value.recipientName,
-      recipientPhone: orderInfo.value.recipientPhone,
-      recipientAddress: orderInfo.value.recipientAddress,
-      totalAmount: totalAmount.value + shippingFee.value,
-      paymentMethod: orderInfo.value.paymentMethod,
-      note: orderInfo.value.note || ''
+    let orderData;
+    let addressId = null;
+    
+    if (useAddressSelector.value) {
+      // 使用地址选择器，直接获取选中的地址ID
+      addressId = selectedAddressId.value;
+    } else {
+      // 使用手动输入的地址，先保存地址获取ID
+      try {
+        const addressData = {
+          receiverName: manualAddress.value.receiverName,
+          receiverPhone: manualAddress.value.receiverPhone,
+          province: '未指定',  // 提供默认值
+          city: '未指定',      // 提供默认值
+          district: '未指定',  // 提供默认值
+          detailAddress: manualAddress.value.receiverAddress,
+          isDefault: false     // 不设为默认地址
+        };
+        
+        console.log('创建新地址:', JSON.stringify(addressData));
+        
+        // 导入createAddress函数
+        const { createAddress } = await import('@/api/address');
+        const addressResponse = await createAddress(addressData);
+        
+        if (addressResponse.data && addressResponse.data.code === 200) {
+          addressId = addressResponse.data.data.id;
+          console.log('地址创建成功，ID:', addressId);
+        } else {
+          throw new Error(addressResponse.data?.message || '创建地址失败');
+        }
+      } catch (error) {
+        console.error('创建地址失败:', error);
+        
+        // 检查是否是登录过期错误
+        if (error.message.includes('登录已过期') || error.message.includes('未授权')) {
+          // 保存当前页面状态
+          const currentState = {
+            manualAddress: manualAddress.value,
+            orderInfo: orderInfo.value,
+            cartItems: cart.items
+          };
+          localStorage.setItem('checkoutState', JSON.stringify(currentState));
+          
+          // 跳转到登录页面，并指定返回地址
+          router.push(`/login?redirect=${encodeURIComponent('/checkout')}`);
+          return;
+        }
+        
+        // 其他错误，询问用户是否使用当前地址
+        const useDirectOrderCreation = confirm(`创建地址失败: ${error.message || '未知错误'}\n\n您希望直接使用当前输入的地址信息提交订单吗？`);
+        
+        if (useDirectOrderCreation) {
+          // 直接使用手动输入的地址信息创建订单
+          orderData = {
+            receiverName: manualAddress.value.receiverName,
+            receiverPhone: manualAddress.value.receiverPhone,
+            receiverAddress: manualAddress.value.receiverAddress,
+            items: cart.items.map(item => ({
+              productId: item.id,
+              productName: item.name,
+              productImage: item.image,
+              productSpecs: item.specs || '默认规格',
+              unitPrice: item.price,
+              quantity: item.quantity
+            }))
+          };
+        } else {
+          isSubmitting.value = false;
+          return;
+        }
+      }
     }
     
-    const order = await createOrder(orderData)
-    
-    // 清空购物车
-    cart.clearCart()
-    
-    // 跳转到支付页面或订单详情页
-    router.push(`/orders/${order.id}`)
+    // 如果使用地址ID方式或成功创建了地址
+    if (addressId) {
+      // 创建订单数据，使用获取到的addressId
+      orderData = {
+        addressId: addressId,
+        items: cart.items.map(item => ({
+          productId: item.id,
+          productName: item.name,
+          productImage: item.image,
+          productSpecs: item.specs || '默认规格',
+          unitPrice: item.price,
+          quantity: item.quantity
+        }))
+      };
+      
+      console.log('提交订单数据:', JSON.stringify(orderData));
+      
+      const response = await createOrder(orderData)
+      
+      if (response.data && response.data.code === 200) {
+        // 清空购物车
+        cart.clearCart()
+        
+        // 跳转到支付页面或订单详情页
+        router.push(`/orders/${response.data.data.id}`)
+      } else {
+        alert(response.data?.message || '订单创建失败，请稍后重试')
+      }
+    } else {
+      alert('无法获取有效的地址ID');
+    }
   } catch (error) {
-    console.error('创建订单失败:', error)
+    console.error('提交订单失败:', error)
     alert('订单创建失败，请稍后重试')
   } finally {
     isSubmitting.value = false
@@ -214,10 +324,31 @@ onMounted(() => {
   }
   
   // 如果用户已登录，自动填充用户信息
-  if (userStore.isLoggedIn && userStore.userInfo) {
-    orderInfo.value.recipientName = userStore.userInfo.name || ''
-    orderInfo.value.recipientPhone = userStore.userInfo.phone || ''
-    orderInfo.value.recipientAddress = userStore.userInfo.address || ''
+  if (!useAddressSelector.value && userStore.isLoggedIn && userStore.userInfo) {
+    manualAddress.value.receiverName = userStore.userInfo.name || ''
+    manualAddress.value.receiverPhone = userStore.userInfo.phone || ''
+    manualAddress.value.receiverAddress = userStore.userInfo.address || ''
+  }
+
+  // 检查是否有保存的结账状态
+  const savedState = localStorage.getItem('checkoutState');
+  if (savedState) {
+    try {
+      const state = JSON.parse(savedState);
+      // 恢复地址信息
+      if (state.manualAddress) {
+        manualAddress.value = state.manualAddress;
+      }
+      // 恢复订单信息
+      if (state.orderInfo) {
+        orderInfo.value = state.orderInfo;
+      }
+      // 清除保存的状态
+      localStorage.removeItem('checkoutState');
+    } catch (error) {
+      console.error('恢复结账状态失败:', error);
+      localStorage.removeItem('checkoutState');
+    }
   }
 })
 </script>
@@ -253,6 +384,7 @@ h2 {
   border-bottom: 1px solid #f0f0f0;
 }
 
+/* 地址表单样式 */
 .address-form {
   display: flex;
   flex-wrap: wrap;
@@ -267,13 +399,13 @@ h2 {
   width: 100%;
 }
 
-label {
+.form-group label {
   display: block;
   margin-bottom: 8px;
   color: #666;
 }
 
-input {
+.form-group input {
   width: 100%;
   padding: 10px;
   border: 1px solid #d9d9d9;
@@ -281,32 +413,36 @@ input {
   font-size: 14px;
 }
 
-input:focus {
-  border-color: #1677ff;
-  outline: none;
+.toggle-btn {
+  margin-top: 16px;
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 .product-list {
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .product-item {
   display: flex;
   align-items: center;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.product-item:last-child {
-  border-bottom: none;
+  padding: 10px;
+  background: #fafafa;
+  border-radius: 4px;
 }
 
 .product-image {
   width: 80px;
   height: 80px;
   object-fit: cover;
-  border-radius: 4px;
   margin-right: 16px;
+  border-radius: 4px;
 }
 
 .product-info {
@@ -314,23 +450,26 @@ input:focus {
 }
 
 .product-name {
-  margin-bottom: 8px;
   font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 4px;
 }
 
 .product-specs {
-  color: #999;
   font-size: 14px;
+  color: #666;
 }
 
 .product-price, .product-quantity, .product-subtotal {
-  width: 100px;
-  text-align: center;
+  margin-left: 16px;
+  font-size: 14px;
+  color: #333;
 }
 
 .product-subtotal {
-  font-weight: 500;
-  color: #ff4d4f;
+  font-weight: bold;
+  min-width: 80px;
+  text-align: right;
 }
 
 .payment-options {
@@ -339,110 +478,86 @@ input:focus {
 }
 
 .payment-option {
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
   padding: 12px 20px;
-  display: flex;
-  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
-.payment-option img {
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
+.payment-option:hover {
+  border-color: #40a9ff;
 }
 
 .payment-option.active {
-  border-color: #1677ff;
-  color: #1677ff;
+  border-color: #1890ff;
+  background-color: #e6f7ff;
 }
 
 .order-summary {
   padding: 20px;
-  background: #f9f9f9;
+  background: #fafafa;
 }
 
 .summary-row {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-bottom: 8px;
 }
 
-.summary-row span:first-child {
-  margin-right: 16px;
-  color: #666;
-}
-
 .summary-row.total {
+  margin-top: 16px;
   font-size: 18px;
-  font-weight: 500;
-  margin-top: 8px;
-}
-
-.summary-row.total span:last-child {
+  font-weight: bold;
   color: #ff4d4f;
 }
 
 .checkout-actions {
   padding: 20px;
   display: flex;
-  justify-content: flex-end;
-  gap: 16px;
+  justify-content: space-between;
 }
 
-button {
-  padding: 10px 24px;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
+.btn-back, .btn-submit, .btn-shop {
+  padding: 10px 20px;
   border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
   transition: all 0.3s;
 }
 
 .btn-back {
-  background: white;
-  color: #666;
-  border: 1px solid #d9d9d9;
-}
-
-.btn-back:hover {
-  color: #1677ff;
-  border-color: #1677ff;
+  background-color: #f0f0f0;
+  color: #333;
 }
 
 .btn-submit {
-  background: #1677ff;
+  background-color: #ff4d4f;
   color: white;
 }
 
-.btn-submit:hover {
-  background: #0958d9;
+.btn-submit:disabled {
+  background-color: #ffccc7;
+  cursor: not-allowed;
 }
 
-.btn-submit:disabled {
-  background: #d9d9d9;
-  cursor: not-allowed;
+.btn-shop {
+  background-color: #1890ff;
+  color: white;
 }
 
 .empty-cart {
   text-align: center;
-  padding: 60px 0;
-  color: #999;
+  padding: 50px 20px;
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.empty-image {
-  width: 120px;
-  margin-bottom: 16px;
-}
-
-.btn-shop {
-  margin-top: 16px;
-  background: #1677ff;
-  color: white;
+.empty-cart p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #999;
 }
 </style> 

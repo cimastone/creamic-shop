@@ -33,14 +33,37 @@ public class OrderController {
         // 提取用户ID
         Long userId = extractUserIdFromToken(token);
         
-        // 转换地址信息
-        AddressDTO addressDTO = new AddressDTO();
-        addressDTO.setReceiverName(request.getReceiverName());
-        addressDTO.setReceiverPhone(request.getReceiverPhone());
-        addressDTO.setReceiverAddress(request.getReceiverAddress());
+        // 调试日志
+        System.out.println("-----创建订单请求-----");
+        System.out.println("用户ID: " + userId);
+        System.out.println("地址ID: " + request.getAddressId());
+        System.out.println("收货人: " + request.getReceiverName());
+        System.out.println("收货电话: " + request.getReceiverPhone());
+        System.out.println("收货地址: " + request.getReceiverAddress());
+        System.out.println("订单项数量: " + (request.getItems() != null ? request.getItems().size() : "null"));
         
-        // 创建订单
-        OrderDTO orderDTO = orderApplicationService.createOrder(userId, addressDTO, request.getItems());
+        // 请求验证
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("订单项不能为空");
+        }
+        
+        OrderDTO orderDTO;
+        
+        // 判断使用哪种方式创建订单
+        if (request.hasReceiverInfo()) {
+            // 方式2：直接使用收货人信息创建订单
+            AddressDTO addressDTO = new AddressDTO();
+            addressDTO.setReceiverName(request.getReceiverName());
+            addressDTO.setReceiverPhone(request.getReceiverPhone());
+            addressDTO.setReceiverAddress(request.getReceiverAddress());
+            
+            orderDTO = orderApplicationService.createOrder(userId, addressDTO, request.getItems());
+        } else if (request.getAddressId() != null) {
+            // 方式1：通过地址ID创建订单
+            orderDTO = orderApplicationService.createOrder(userId, request.getAddressId(), request.getItems());
+        } else {
+            throw new IllegalArgumentException("收货地址信息不完整，请提供地址ID或完整的收货人信息");
+        }
         
         return ApiResponse.success(orderDTO);
     }
@@ -147,8 +170,43 @@ public class OrderController {
      * 从JWT token中提取用户ID
      */
     private Long extractUserIdFromToken(String token) {
-        // 在实际项目中，这里应该解析JWT token并提取用户ID
-        // 这里简化处理，假设token格式为"Bearer userId"
-        return Long.parseLong(token.substring(7));
+        if (token == null || token.isEmpty()) {
+            throw new IllegalArgumentException("Token不能为空");
+        }
+
+        // 调试日志
+        System.out.println("正在验证token: " + token);
+
+        // 移除Bearer前缀
+        String tokenValue = token;
+        if (token.startsWith("Bearer ")) {
+            tokenValue = token.substring(7);
+        }
+
+        try {
+            // 在实际项目中，这里应该使用JWT库验证token
+            // 这里简化处理，假设token格式为"mock-token-for-user-123"
+            if (!tokenValue.startsWith("mock-token-for-user-")) {
+                throw new IllegalArgumentException("无效的token格式");
+            }
+
+            String userIdStr = tokenValue.replace("mock-token-for-user-", "");
+            Long userId = Long.parseLong(userIdStr);
+
+            // 验证用户ID是否有效
+            if (userId <= 0) {
+                throw new IllegalArgumentException("无效的用户ID");
+            }
+
+            System.out.println("成功提取用户ID: " + userId);
+            return userId;
+
+        } catch (NumberFormatException e) {
+            System.err.println("Token解析失败: " + e.getMessage());
+            throw new IllegalArgumentException("无效的token格式: " + token, e);
+        } catch (Exception e) {
+            System.err.println("Token验证失败: " + e.getMessage());
+            throw new IllegalArgumentException("Token验证失败: " + e.getMessage(), e);
+        }
     }
 } 

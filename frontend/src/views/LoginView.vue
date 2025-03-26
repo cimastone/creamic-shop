@@ -81,9 +81,27 @@ const handleLogin = async () => {
   try {
     const result = await userStore.login(username.value, password.value)
     if (result) {
-      router.push('/')
+      // 获取重定向地址
+      const redirect = route.query.redirect || '/'
+      
+      // 检查是否有保存的路由信息
+      const lastRoute = localStorage.getItem('lastRoute')
+      if (lastRoute) {
+        try {
+          const { path, query } = JSON.parse(lastRoute)
+          localStorage.removeItem('lastRoute')
+          router.push({ path, query: query ? JSON.parse(query) : {} })
+          return
+        } catch (e) {
+          console.error('解析保存的路由信息失败:', e)
+        }
+      }
+      
+      // 如果没有保存的路由信息，使用redirect参数
+      router.push(decodeURIComponent(redirect))
     }
   } catch (error) {
+    console.error('登录失败:', error)
     errorMessage.value = error.message || '登录失败，请检查用户名和密码'
   } finally {
     isLoading.value = false

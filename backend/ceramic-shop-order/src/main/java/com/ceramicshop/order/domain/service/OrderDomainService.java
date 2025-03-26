@@ -2,6 +2,7 @@ package com.ceramicshop.order.domain.service;
 
 import com.ceramicshop.order.domain.model.Order;
 import com.ceramicshop.order.domain.model.OrderItem;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -34,4 +35,9 @@ public interface OrderDomainService {
      * 确认收货
      */
     void completeOrder(Order order);
+
+    /**
+     * 处理新订单的业务逻辑
+     */
+    void processNewOrder(Order order);
 } 

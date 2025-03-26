@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -35,7 +36,7 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     @Transactional
-    public void save(Order order) {
+    public Order save(Order order) {
         // 转换订单为PO
         OrderPO orderPO = toPO(order);
         
@@ -51,36 +52,38 @@ public class OrderRepositoryImpl implements OrderRepository {
             itemPO.setOrderId(orderPO.getId());
             orderItemMapper.insert(itemPO);
         }
+        
+        return order;
     }
 
     @Override
-    public Order findById(Long id) {
+    public Optional<Order> findById(Long id) {
         // 查询订单
         OrderPO orderPO = orderMapper.selectById(id);
         if (orderPO == null) {
-            return null;
+            return Optional.empty();
         }
         
         // 查询订单项
         List<OrderItemPO> itemPOs = orderItemMapper.selectByOrderId(id);
         
         // 转换为领域模型
-        return toDomain(orderPO, itemPOs);
+        return Optional.of(toDomain(orderPO, itemPOs));
     }
 
     @Override
-    public Order findByOrderNumber(String orderNumber) {
+    public Optional<Order> findByOrderNumber(String orderNumber) {
         // 查询订单
         OrderPO orderPO = orderMapper.selectByOrderNumber(orderNumber);
         if (orderPO == null) {
-            return null;
+            return Optional.empty();
         }
         
         // 查询订单项
         List<OrderItemPO> itemPOs = orderItemMapper.selectByOrderId(orderPO.getId());
         
         // 转换为领域模型
-        return toDomain(orderPO, itemPOs);
+        return Optional.of(toDomain(orderPO, itemPOs));
     }
 
     @Override
@@ -121,12 +124,14 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @Override
     @Transactional
-    public void update(Order order) {
+    public Order update(Order order) {
         // 转换为PO并更新
         OrderPO orderPO = toPO(order);
         orderMapper.update(orderPO);
         
         // 更新订单项（如有需要）
+        
+        return order;
     }
 
     @Override
@@ -155,16 +160,23 @@ public class OrderRepositoryImpl implements OrderRepository {
             setFieldValue(order, "userId", po.getUserId());
             setFieldValue(order, "status", OrderStatus.valueOf(po.getStatus()));
             setFieldValue(order, "totalAmount", po.getTotalAmount());
-            setFieldValue(order, "paymentAmount", po.getTotalAmount()); // 简化处理
+            setFieldValue(order, "paymentAmount", po.getPaymentAmount());
+            setFieldValue(order, "shippingFee", po.getShippingFee());
+            setFieldValue(order, "discountAmount", po.getDiscountAmount());
+            setFieldValue(order, "addressId", po.getAddressId());
             setFieldValue(order, "recipientName", po.getReceiverName());
             setFieldValue(order, "recipientPhone", po.getReceiverPhone());
             setFieldValue(order, "recipientAddress", po.getReceiverAddress());
+            setFieldValue(order, "shippingMethod", po.getShippingMethod());
+            setFieldValue(order, "paymentMethod", po.getPaymentMethod());
+            setFieldValue(order, "remark", po.getRemark());
             setFieldValue(order, "createTime", po.getCreateTime());
             setFieldValue(order, "updateTime", po.getUpdateTime());
             setFieldValue(order, "payTime", po.getPayTime());
             setFieldValue(order, "shipTime", po.getShipTime());
+            setFieldValue(order, "deliveryTime", po.getDeliveryTime());
             setFieldValue(order, "completeTime", po.getCompleteTime());
-            setFieldValue(order, "closeTime", po.getCancelTime());
+            setFieldValue(order, "closeTime", po.getCloseTime());
             
             // 设置订单项
             List<OrderItem> items = new ArrayList<>();
@@ -220,15 +232,20 @@ public class OrderRepositoryImpl implements OrderRepository {
         po.setUserId(order.getUserId());
         po.setStatus(order.getStatus().name());
         po.setTotalAmount(order.getTotalAmount());
-        po.setReceiverName(order.getRecipientName());
-        po.setReceiverPhone(order.getRecipientPhone());
-        po.setReceiverAddress(order.getRecipientAddress());
+        po.setPaymentAmount(order.getPaymentAmount());
+        po.setShippingFee(order.getShippingFee());
+        po.setDiscountAmount(order.getDiscountAmount());
+        po.setAddressId(order.getAddressId());
+        po.setShippingMethod(order.getShippingMethod());
+        po.setPaymentMethod(order.getPaymentMethod());
+        po.setRemark(order.getRemark());
         po.setCreateTime(order.getCreateTime());
         po.setUpdateTime(LocalDateTime.now());
         po.setPayTime(order.getPayTime());
         po.setShipTime(order.getShipTime());
+        po.setDeliveryTime(order.getDeliveryTime());
         po.setCompleteTime(order.getCompleteTime());
-        po.setCancelTime(order.getCloseTime());
+        po.setCloseTime(order.getCloseTime());
         return po;
     }
     

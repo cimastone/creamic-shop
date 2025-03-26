@@ -31,27 +31,33 @@ const orderApi = axios.create({
 const applyInterceptors = (instance) => {
   // 请求拦截器，添加token
   instance.interceptors.request.use(
-    config => {
-      const token = localStorage.getItem('token')
-      if (token) {
+  config => {
+    const token = localStorage.getItem('token')
+    if (token) {
         config.headers['Authorization'] = `Bearer ${token}`
-      }
-      return config
-    },
-    error => {
-      return Promise.reject(error)
     }
-  )
+    return config
+  },
+  error => {
+    return Promise.reject(error)
+  }
+)
 
   // 响应拦截器，处理常见错误
   instance.interceptors.response.use(
     response => {
-      return response.data
+      // 检查响应状态
+      if (response.data && response.data.code === 200) {
+        return response.data;
+      } else {
+        // 处理业务错误
+        const error = new Error(response.data?.message || '请求失败');
+        error.response = response;
+        return Promise.reject(error);
+      }
     },
-    error => {
+  error => {
       console.error('API错误:', error);
-      // 添加详细的错误信息
-      let errorMessage = '请求失败';
       
       if (error.response) {
         console.error('错误状态:', error.response.status);
@@ -59,34 +65,35 @@ const applyInterceptors = (instance) => {
         
         // 根据状态码提供更具体的错误信息
         if (error.response.status === 401) {
-          // 未授权，清除token并跳转到登录页
+          // 未授权，清除token
           localStorage.removeItem('token');
-          window.location.href = '/login';
-          errorMessage = '未授权，请重新登录';
-        } else if (error.response.status === 400) {
-          // 尝试从响应中提取错误消息
-          if (error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-          } else if (error.response.data && error.response.data.error) {
-            errorMessage = error.response.data.error;
-          } else {
-            errorMessage = '请求参数错误';
+          localStorage.removeItem('refreshToken');
+          
+          // 保存当前路由信息
+          const currentPath = window.location.pathname;
+          const currentQuery = window.location.search;
+          localStorage.setItem('lastRoute', JSON.stringify({
+            path: currentPath,
+            query: currentQuery
+          }));
+          
+          // 如果不是登录页面，则跳转到登录页
+          if (!window.location.pathname.includes('/login')) {
+            window.location.href = `/login?redirect=${encodeURIComponent(currentPath + currentQuery)}`;
           }
+          
+          return Promise.reject(new Error('登录已过期，请重新登录'));
+        } else if (error.response.status === 400) {
+          const message = error.response.data?.message || error.response.data?.error || '请求参数错误';
+          return Promise.reject(new Error(message));
         } else if (error.response.status === 500) {
-          errorMessage = '服务器内部错误，请稍后再试';
+          return Promise.reject(new Error('服务器内部错误，请稍后再试'));
         }
       } else if (error.request) {
-        console.error('请求未收到响应:', error.request);
-        errorMessage = '无法连接到服务器，请检查您的网络连接';
-      } else {
-        console.error('请求设置错误:', error.message);
-        errorMessage = error.message;
+        return Promise.reject(new Error('无法连接到服务器，请检查您的网络连接'));
       }
       
-      // 修改错误对象以包含更友好的消息
-      const enhancedError = new Error(errorMessage);
-      enhancedError.originalError = error;
-      return Promise.reject(enhancedError);
+      return Promise.reject(error);
     }
   )
 }

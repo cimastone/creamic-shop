@@ -41,7 +41,8 @@
         ) VALUES (
             #{orderNumber}, #{userId}, #{status}, #{totalAmount}, #{paymentAmount}, #{shippingFee}, #{discountAmount},
             #{payTime}, #{shipTime}, #{deliveryTime}, #{completeTime}, #{closeTime},
-            #{addressId}, #{shippingMethod}, #{paymentMethod}, #{remark}, #{createTime}, #{updateTime}
+            #{addressId}, #{shippingMethod}, #{paymentMethod}, #{remark}, 
+            #{createTime}, #{updateTime}
         )
     </insert>
 

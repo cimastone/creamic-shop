@@ -13,7 +13,17 @@ import java.util.List;
 public interface OrderApplicationService {
     
     /**
-     * 创建订单
+     * 创建订单（通过地址ID）
+     * 
+     * @param userId 用户ID
+     * @param addressId 地址ID
+     * @param orderItems 订单项列表
+     * @return 订单DTO
+     */
+    OrderDTO createOrder(Long userId, Long addressId, List<OrderItemDTO> orderItems);
+    
+    /**
+     * 创建订单（直接使用收货人信息）
      * 
      * @param userId 用户ID
      * @param addressDTO 地址信息

@@ -15,13 +15,22 @@ public class OrderPO {
     private Long userId;
     private String status;
     private BigDecimal totalAmount;
+    private BigDecimal paymentAmount;
+    private BigDecimal shippingFee;
+    private BigDecimal discountAmount;
+    private Long addressId;
+    private Long logisticsId;
     private String receiverName;
     private String receiverPhone;
     private String receiverAddress;
+    private String shippingMethod;
+    private String paymentMethod;
+    private String remark;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private LocalDateTime payTime;
     private LocalDateTime shipTime;
+    private LocalDateTime deliveryTime;
     private LocalDateTime completeTime;
-    private LocalDateTime cancelTime;
+    private LocalDateTime closeTime;
 } 
