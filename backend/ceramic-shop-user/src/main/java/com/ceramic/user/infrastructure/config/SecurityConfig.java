@@ -24,8 +24,8 @@ public class SecurityConfig {
             .cors().and()
             .csrf().disable()
             .authorizeRequests()
-                .antMatchers("/", "/health", "/api/users/login", "/api/users/register", 
-                             "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                .antMatchers("/", "/health", "/api/users/login", "/api/users/register", "/api/users/refresh",
+                             "/api/users/current", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                 .anyRequest().authenticated()
             .and()
             .httpBasic();

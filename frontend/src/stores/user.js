@@ -1,107 +1,108 @@
 import { defineStore } from 'pinia'
-import { userApi } from '../api/user'
+import { ref, computed } from 'vue'
+import { login as apiLogin, logout as apiLogout } from '@/api/auth'
+import { userApi } from '@/api'
 
-export const useUserStore = defineStore('user', {
-  state: () => ({
-    isLoggedIn: false,
-    userInfo: null,
-    token: null
-  }),
+export const useUserStore = defineStore('user', () => {
+  const token = ref(localStorage.getItem('token') || '')
+  const refreshToken = ref(localStorage.getItem('refreshToken') || '')
+  const userInfo = ref(null)
+  const isLoggedIn = computed(() => !!token.value)
 
-  actions: {
-    checkLoginStatus() {
-      console.log('检查登录状态...');
-      // 从localStorage获取登录状态
-      const token = localStorage.getItem('token')
-      const userInfo = localStorage.getItem('userInfo')
+  // 登录
+  async function login(username, password) {
+    try {
+      const response = await apiLogin(username, password)
       
-      if (token && userInfo) {
-        try {
-          this.token = token;
-          this.userInfo = JSON.parse(userInfo);
-          this.isLoggedIn = true;
-          console.log('已找到有效token和用户信息');
-          return true;
-        } catch (e) {
-          console.error('解析用户信息失败:', e);
-          this.logout(); // 出错时清除状态
-          return false;
-        }
-      }
-      
-      console.log('未找到有效token或用户信息');
-      this.isLoggedIn = false;
-      this.userInfo = null;
-      this.token = null;
-      return false;
-    },
-
-    async login(username, password) {
-      try {
-        console.log('尝试登录用户:', username);
-        const response = await userApi.login({
-          username,
-          password
-        });
-        
-        console.log('登录响应:', response);
-        
-        if (!response.token) {
-          console.error('登录响应中没有token');
-          throw new Error('登录失败: 没有收到有效token');
+      if (response.data) {
+        // 保存token
+        token.value = response.data.token
+        refreshToken.value = response.data.refreshToken || ''
+        localStorage.setItem('token', response.data.token)
+        if (response.data.refreshToken) {
+          localStorage.setItem('refreshToken', response.data.refreshToken)
         }
         
-        // 保存登录状态和令牌
-        this.token = response.token;
-        this.userInfo = response.user;
-        this.isLoggedIn = true;
-        
-        localStorage.setItem('token', response.token);
-        localStorage.setItem('userInfo', JSON.stringify(response.user));
-        
-        console.log('登录成功，用户信息已保存');
-        return true;
-      } catch (error) {
-        console.error('登录失败:', error);
-        throw error;
+        // 设置用户信息（如果返回）
+        if (response.data.user) {
+          userInfo.value = response.data.user
+        } else {
+          // 获取用户信息
+          await fetchUserInfo()
+        }
+        return true
+      } else {
+        throw new Error('登录失败')
       }
-    },
-    
-    async register(userData) {
-      try {
-        console.log('发送注册请求数据:', {
-          username: userData.username,
-          password: userData.password,
-          email: userData.email,
-          nickname: userData.nickname,
-          phone: userData.phone
-        });
-        
-        const response = await userApi.register({
-          username: userData.username,
-          password: userData.password,
-          email: userData.email,
-          nickname: userData.nickname,
-          phone: userData.phone
-        });
-        
-        console.log('注册响应:', response);
-        
-        // 不再自动登录，只返回成功结果
-        return true;
-      } catch (error) {
-        console.error('注册失败详细信息:', error);
-        throw error;
-      }
-    },
-
-    logout() {
-      console.log('用户登出，清除数据');
-      localStorage.removeItem('token');
-      localStorage.removeItem('userInfo');
-      this.isLoggedIn = false;
-      this.userInfo = null;
-      this.token = null;
+    } catch (error) {
+      console.error('登录失败:', error)
+      throw error
     }
+  }
+
+  // 登出
+  async function logout() {
+    try {
+      await apiLogout()
+    } catch (error) {
+      console.error('登出失败:', error)
+    } finally {
+      // 清除本地存储
+      token.value = ''
+      refreshToken.value = ''
+      userInfo.value = null
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+    }
+  }
+
+  // 获取用户信息
+  async function fetchUserInfo() {
+    try {
+      const response = await userApi.get('/api/users/current')
+      if (response.data) {
+        userInfo.value = response.data
+      } else {
+        throw new Error('获取用户信息失败')
+      }
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+      throw error
+    }
+  }
+
+  // 检查登录状态
+  function checkLoginStatus() {
+    if (!token.value) {
+      return false
+    }
+    return true
+  }
+
+  // 更新用户信息
+  async function updateUserInfo(info) {
+    try {
+      const response = await userApi.put('/api/users/current', info)
+      if (response.code === 200 && response.data) {
+        userInfo.value = response.data
+        return true
+      }
+      throw new Error('更新用户信息失败')
+    } catch (error) {
+      console.error('更新用户信息失败:', error)
+      throw error
+    }
+  }
+
+  return {
+    token,
+    refreshToken,
+    userInfo,
+    isLoggedIn,
+    login,
+    logout,
+    fetchUserInfo,
+    checkLoginStatus,
+    updateUserInfo
   }
 }) 

@@ -79,7 +79,14 @@ const handleLogin = async () => {
   isLoading.value = true
   
   try {
+    // 表单验证
+    if (!username.value || !password.value) {
+      throw new Error('请输入用户名和密码')
+    }
+
+    // 调用登录
     const result = await userStore.login(username.value, password.value)
+    
     if (result) {
       // 获取重定向地址
       const redirect = route.query.redirect || '/'
@@ -102,7 +109,7 @@ const handleLogin = async () => {
     }
   } catch (error) {
     console.error('登录失败:', error)
-    errorMessage.value = error.message || '登录失败，请检查用户名和密码'
+    errorMessage.value = error.response?.data?.message || error.message || '登录失败，请检查用户名和密码'
   } finally {
     isLoading.value = false
   }

@@ -197,6 +197,14 @@ public class UserApplicationService {
     }
 
     /**
+     * 根据用户名获取用户
+     */
+    public Optional<UserDTO> getUserByUsername(String username) {
+        return userDomainService.getUserByUsername(new Username(username))
+                .map(this::convertToDTO);
+    }
+
+    /**
      * 将用户实体转换为DTO
      */
     private UserDTO convertToDTO(User user) {

@@ -47,21 +47,40 @@ const applyInterceptors = (instance) => {
   instance.interceptors.response.use(
     response => {
       // 检查响应状态
-      if (response.data && response.data.code === 200) {
+      if (response.status >= 200 && response.status < 300) {
+        // 对于登录接口直接返回整个响应
+        if (response.config.url.includes('/api/users/login')) {
+          return response;
+        }
+        
+        // 检查是否有code字段（自定义响应格式）
+        if (response.data && response.data.hasOwnProperty('code')) {
+          if (response.data.code === 200) {
+            return response.data;
+          } else {
+            // 处理业务错误
+            const error = new Error(response.data?.message || '请求失败');
+            error.response = response;
+            return Promise.reject(error);
+          }
+        }
+        
+        // 标准HTTP响应
         return response.data;
-      } else {
-        // 处理业务错误
-        const error = new Error(response.data?.message || '请求失败');
-        error.response = response;
-        return Promise.reject(error);
       }
+      return response;
     },
-  error => {
+    error => {
       console.error('API错误:', error);
       
       if (error.response) {
         console.error('错误状态:', error.response.status);
         console.error('错误数据:', error.response.data);
+        
+        // 对于登录接口的错误，直接返回
+        if (error.config.url.includes('/api/users/login')) {
+          return Promise.reject(error);
+        }
         
         // 根据状态码提供更具体的错误信息
         if (error.response.status === 401) {

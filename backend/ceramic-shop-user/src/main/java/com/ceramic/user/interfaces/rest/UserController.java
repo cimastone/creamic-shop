@@ -57,6 +57,20 @@ public class UserController {
     }
 
     /**
+     * 获取当前登录用户信息
+     */
+    @GetMapping("/current")
+    public ResponseEntity<UserDTO> getCurrentUser() {
+        // 通过Spring Security获取当前用户名，这里简化处理
+        // 实际应该从SecurityContextHolder获取Authentication
+        String username = "cimastone"; // 临时硬编码，仅供演示
+        
+        return userApplicationService.getUserByUsername(username)
+                .map(ResponseEntity::ok)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    /**
      * 获取用户信息
      */
     @GetMapping("/{userId}")
