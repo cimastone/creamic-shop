@@ -228,11 +228,25 @@ const submitOrder = async () => {
         const { createAddress } = await import('@/api/address');
         const addressResponse = await createAddress(addressData);
         
-        if (addressResponse.data && addressResponse.data.code === 200) {
-          addressId = addressResponse.data.data.id;
+        // 适配新的响应格式
+        if ((addressResponse.data && addressResponse.data.code === 0) || addressResponse.code === 0) {
+          // 从响应中提取地址ID
+          let createdAddress;
+          if (addressResponse.data && addressResponse.data.data) {
+            createdAddress = addressResponse.data.data;
+          } else if (addressResponse.data) {
+            createdAddress = addressResponse.data;
+          } else {
+            createdAddress = addressResponse;
+          }
+          
+          addressId = createdAddress.id;
           console.log('地址创建成功，ID:', addressId);
         } else {
-          throw new Error(addressResponse.data?.message || '创建地址失败');
+          const errorMsg = (addressResponse.data && addressResponse.data.message) ||
+                          addressResponse.message ||
+                          '创建地址失败';
+          throw new Error(errorMsg);
         }
       } catch (error) {
         console.error('创建地址失败:', error);
@@ -296,14 +310,28 @@ const submitOrder = async () => {
       
       const response = await createOrder(orderData)
       
-      if (response.data && response.data.code === 200) {
+      // 适配新的响应格式
+      if ((response.data && response.data.code === 0) || response.code === 0) {
         // 清空购物车
         cart.clearCart()
         
+        // 获取订单ID
+        let orderId;
+        if (response.data && response.data.data) {
+          orderId = response.data.data.id;
+        } else if (response.data) {
+          orderId = response.data.id;
+        } else {
+          orderId = response.id;
+        }
+        
         // 跳转到支付页面或订单详情页
-        router.push(`/orders/${response.data.data.id}`)
+        router.push(`/orders/${orderId}`)
       } else {
-        alert(response.data?.message || '订单创建失败，请稍后重试')
+        const errorMsg = (response.data && response.data.message) || 
+                        response.message || 
+                        '订单创建失败，请稍后重试';
+        alert(errorMsg);
       }
     } else {
       alert('无法获取有效的地址ID');

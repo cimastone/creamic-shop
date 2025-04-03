@@ -1,10 +1,13 @@
-package com.ceramic.user.infrastructure.config;
+package com.ceramicshop.order.infrastructure.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -12,24 +15,30 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 /**
- * 安全配置
+ * 订单模块安全配置
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .cors().and()
             .csrf().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
             .authorizeRequests()
-                .antMatchers("/", "/health", "/api/users/login", "/api/users/register", "/api/users/refresh",
-                             "/api/users/current", "/api/addresses/**",
-                             "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                // 只有健康检查和Swagger接口可以公开访问
+                .antMatchers("/", "/health", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
+                // 其他所有接口都需要认证
                 .anyRequest().authenticated()
             .and()
-            .httpBasic();
+            // 添加JWT过滤器，处理认证逻辑
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }

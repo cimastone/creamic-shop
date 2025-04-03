@@ -1,11 +1,12 @@
-import { userApi as api } from './index'
+import { userApi, orderApi } from './index'
 
+// 用户地址相关API（保持原有的接口）
 /**
  * 获取用户的所有地址
  * @returns {Promise}
  */
 export function getUserAddresses() {
-  return api.get('/api/addresses');
+  return userApi.get('/api/addresses');
 }
 
 /**
@@ -13,7 +14,7 @@ export function getUserAddresses() {
  * @returns {Promise}
  */
 export function getDefaultAddress() {
-  return api.get('/api/addresses/default');
+  return userApi.get('/api/addresses/default');
 }
 
 /**
@@ -22,7 +23,7 @@ export function getDefaultAddress() {
  * @returns {Promise}
  */
 export function getAddressById(addressId) {
-  return api.get(`/api/addresses/${addressId}`);
+  return userApi.get(`/api/addresses/${addressId}`);
 }
 
 /**
@@ -31,7 +32,7 @@ export function getAddressById(addressId) {
  * @returns {Promise}
  */
 export function createAddress(addressData) {
-  return api.post('/api/addresses', addressData);
+  return userApi.post('/api/addresses', addressData);
 }
 
 /**
@@ -41,7 +42,7 @@ export function createAddress(addressData) {
  * @returns {Promise}
  */
 export function updateAddress(addressId, addressData) {
-  return api.put(`/api/addresses/${addressId}`, addressData);
+  return userApi.put(`/api/addresses/${addressId}`, addressData);
 }
 
 /**
@@ -50,7 +51,7 @@ export function updateAddress(addressId, addressData) {
  * @returns {Promise}
  */
 export function deleteAddress(addressId) {
-  return api.delete(`/api/addresses/${addressId}`);
+  return userApi.delete(`/api/addresses/${addressId}`);
 }
 
 /**
@@ -59,5 +60,34 @@ export function deleteAddress(addressId) {
  * @returns {Promise}
  */
 export function setDefaultAddress(addressId) {
-  return api.post(`/api/addresses/${addressId}/default`);
-} 
+  return userApi.post(`/api/addresses/${addressId}/default`);
+}
+
+// 物流地址相关API（新增）
+/**
+ * 获取订单的物流地址
+ * @param {Number} orderId 订单ID
+ * @returns {Promise}
+ */
+export function getOrderShippingAddress(orderId) {
+  return orderApi.get(`/api/shipping-addresses/order/${orderId}`);
+}
+
+/**
+ * 获取物流地址详情
+ * @param {Number} addressId 物流地址ID
+ * @returns {Promise}
+ */
+export function getShippingAddressById(addressId) {
+  return orderApi.get(`/api/shipping-addresses/${addressId}`);
+}
+
+/**
+ * 更新物流地址
+ * @param {Number} addressId 物流地址ID
+ * @param {Object} addressData 物流地址数据
+ * @returns {Promise}
+ */
+export function updateShippingAddress(addressId, addressData) {
+  return orderApi.put(`/api/shipping-addresses/${addressId}`, addressData);
+}

@@ -1,4 +1,4 @@
-package com.ceramicshop.order.interfaces.rest.response;
+package com.ceramic.user.interfaces.rest.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

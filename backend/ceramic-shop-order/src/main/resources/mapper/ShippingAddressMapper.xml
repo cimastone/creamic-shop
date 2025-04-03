@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ceramicshop.order.infrastructure.persistence.mapper.ShippingAddressMapper">
+
+    <!-- 物流地址基础ResultMap -->
+    <resultMap id="BaseResultMap" type="com.ceramicshop.order.infrastructure.persistence.entity.ShippingAddressPO">
+        <id column="id" property="id"/>
+        <result column="order_id" property="orderId"/>
+        <result column="receiver_name" property="receiverName"/>
+        <result column="receiver_phone" property="receiverPhone"/>
+        <result column="province" property="province"/>
+        <result column="city" property="city"/>
+        <result column="district" property="district"/>
+        <result column="detail_address" property="detailAddress"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 基础的列 -->
+    <sql id="Base_Column_List">
+        id, order_id, receiver_name, receiver_phone, province, city, district, 
+        detail_address, create_time, update_time
+    </sql>
+
+    <!-- 插入物流地址 -->
+    <insert id="insert" parameterType="com.ceramicshop.order.infrastructure.persistence.entity.ShippingAddressPO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO order_shipping_address (
+            order_id, receiver_name, receiver_phone, province, city, district, 
+            detail_address, create_time, update_time
+        ) VALUES (
+            #{orderId}, #{receiverName}, #{receiverPhone}, #{province}, #{city}, #{district}, 
+            #{detailAddress}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 更新物流地址 -->
+    <update id="update" parameterType="com.ceramicshop.order.infrastructure.persistence.entity.ShippingAddressPO">
+        UPDATE order_shipping_address
+        <set>
+            <if test="receiverName != null">receiver_name = #{receiverName},</if>
+            <if test="receiverPhone != null">receiver_phone = #{receiverPhone},</if>
+            <if test="province != null">province = #{province},</if>
+            <if test="city != null">city = #{city},</if>
+            <if test="district != null">district = #{district},</if>
+            <if test="detailAddress != null">detail_address = #{detailAddress},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询物流地址 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM order_shipping_address
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据订单ID查询物流地址 -->
+    <select id="selectByOrderId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM order_shipping_address
+        WHERE order_id = #{orderId}
+    </select>
+
+    <!-- 根据ID删除物流地址 -->
+    <delete id="deleteById">
+        DELETE FROM order_shipping_address
+        WHERE id = #{id}
+    </delete>
+</mapper> 

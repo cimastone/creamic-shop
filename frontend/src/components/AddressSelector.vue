@@ -133,10 +133,11 @@ onMounted(async () => {
 async function loadAddresses() {
   try {
     const response = await getUserAddresses();
-    if (response.data && response.data.code === 200) {
-      addresses.value = response.data.data || [];
+    // 适配新的响应格式
+    if (response.data) {
+      addresses.value = response.data || [];
     } else {
-      console.error('获取地址列表失败:', response.data);
+      addresses.value = response || [];
     }
   } catch (error) {
     console.error('获取地址列表出错:', error);
@@ -184,7 +185,8 @@ function deleteAddressConfirm(addressId) {
 async function deleteAddressById(addressId) {
   try {
     const response = await deleteAddress(addressId);
-    if (response.data && response.data.code === 200) {
+    // 适配新的响应格式
+    if ((response.data && response.data.code === 0) || response.code === 0) {
       await loadAddresses();
       
       // 如果删除的是当前选中的地址，重新选择一个地址
@@ -241,24 +243,33 @@ async function saveAddress() {
       response = await createAddress(addressForm);
     }
     
-    if (response.data && response.data.code === 200) {
+    // 适配新的响应格式
+    if ((response.data && response.data.code === 0) || response.code === 0) {
       await loadAddresses();
       
       // 如果设为默认地址或是首个地址，自动选中它
-      if (addressForm.isDefault || addresses.value.length === 1) {
-        const savedAddress = response.data.data;
+      let savedAddress;
+      if (response.data && response.data.data) {
+        savedAddress = response.data.data;
+      } else if (response.data) {
+        savedAddress = response.data;
+      } else {
+        savedAddress = addresses.value.find(a => a.isDefault) || addresses.value[0];
+      }
+      
+      if (savedAddress && (addressForm.isDefault || addresses.value.length === 1)) {
         selectedAddressId.value = savedAddress.id;
         emit('update:modelValue', savedAddress.id);
       }
       
-      resetForm();
       showAddressForm.value = false;
+      resetForm();
     } else {
-      alert(response.data && response.data.message || '保存地址失败');
+      alert(isEditing.value ? '更新地址失败' : '添加地址失败');
     }
   } catch (error) {
-    console.error('保存地址出错:', error);
-    alert('保存地址出错');
+    console.error(isEditing.value ? '更新地址出错:' : '添加地址出错:', error);
+    alert(isEditing.value ? '更新地址出错' : '添加地址出错');
   }
 }
 </script>
