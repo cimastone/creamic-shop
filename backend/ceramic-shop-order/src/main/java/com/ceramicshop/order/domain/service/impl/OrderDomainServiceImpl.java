@@ -2,6 +2,7 @@ package com.ceramicshop.order.domain.service.impl;
 
 import com.ceramicshop.order.domain.model.Order;
 import com.ceramicshop.order.domain.model.OrderItem;
+import com.ceramicshop.order.domain.model.ShippingAddress;
 import com.ceramicshop.order.domain.service.OrderDomainService;
 import org.springframework.stereotype.Service;
 
@@ -14,8 +15,8 @@ import java.util.List;
 public class OrderDomainServiceImpl implements OrderDomainService {
     
     @Override
-    public Order createOrder(Long userId, Long addressId, String remark, List<OrderItem> orderItems) {
-        return Order.create(userId, addressId, remark, orderItems);
+    public Order createOrder(Long userId, ShippingAddress shippingAddress, String remark, List<OrderItem> orderItems) {
+        return Order.create(userId, shippingAddress, remark, orderItems);
     }
     
     @Override

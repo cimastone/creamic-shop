@@ -17,14 +17,9 @@
         <result column="delivery_time" property="deliveryTime"/>
         <result column="complete_time" property="completeTime"/>
         <result column="close_time" property="closeTime"/>
-        <result column="shipping_address_id" property="addressId"/>
-        <result column="logistics_id" property="logisticsId"/>
-        <result column="receiver_name" property="receiverName"/>
-        <result column="receiver_phone" property="receiverPhone"/>
-        <result column="receiver_address" property="receiverAddress"/>
         <result column="shipping_method" property="shippingMethod"/>
         <result column="payment_method" property="paymentMethod"/>
-        <result column="note" property="remark"/>
+        <result column="remark" property="remark"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
@@ -33,8 +28,7 @@
     <sql id="Base_Column_List">
         id, order_number, user_id, status, total_amount, payment_amount, shipping_fee, discount_amount,
         pay_time, ship_time, delivery_time, complete_time, close_time, 
-        shipping_address_id, shipping_method, payment_method, note, create_time, update_time,
-        logistics_id, receiver_name, receiver_phone, receiver_address
+        shipping_method, payment_method, remark, create_time, update_time
     </sql>
 
     <!-- 插入订单 -->
@@ -42,13 +36,17 @@
         INSERT INTO orders (
             order_number, user_id, status, total_amount, payment_amount, shipping_fee, discount_amount,
             pay_time, ship_time, delivery_time, complete_time, close_time, 
-            shipping_address_id, shipping_method, payment_method, note, create_time, update_time,
-            logistics_id, receiver_name, receiver_phone, receiver_address
+            <if test="shippingMethod != null">shipping_method,</if>
+            <if test="paymentMethod != null">payment_method,</if>
+            <if test="remark != null">remark,</if>
+            create_time, update_time
         ) VALUES (
             #{orderNumber}, #{userId}, #{status}, #{totalAmount}, #{paymentAmount}, #{shippingFee}, #{discountAmount},
             #{payTime}, #{shipTime}, #{deliveryTime}, #{completeTime}, #{closeTime},
-            #{addressId}, #{shippingMethod}, #{paymentMethod}, #{remark}, #{createTime}, #{updateTime},
-            #{logisticsId}, #{receiverName}, #{receiverPhone}, #{receiverAddress}
+            <if test="shippingMethod != null">#{shippingMethod},</if>
+            <if test="paymentMethod != null">#{paymentMethod},</if>
+            <if test="remark != null">#{remark},</if>
+            #{createTime}, #{updateTime}
         )
     </insert>
 
@@ -96,14 +94,9 @@
             <if test="deliveryTime != null">delivery_time = #{deliveryTime},</if>
             <if test="completeTime != null">complete_time = #{completeTime},</if>
             <if test="closeTime != null">close_time = #{closeTime},</if>
-            <if test="addressId != null">shipping_address_id = #{addressId},</if>
-            <if test="logisticsId != null">logistics_id = #{logisticsId},</if>
-            <if test="receiverName != null">receiver_name = #{receiverName},</if>
-            <if test="receiverPhone != null">receiver_phone = #{receiverPhone},</if>
-            <if test="receiverAddress != null">receiver_address = #{receiverAddress},</if>
             <if test="shippingMethod != null">shipping_method = #{shippingMethod},</if>
             <if test="paymentMethod != null">payment_method = #{paymentMethod},</if>
-            <if test="remark != null">note = #{remark},</if>
+            <if test="remark != null">remark = #{remark},</if>
             update_time = #{updateTime}
         </set>
         WHERE id = #{id}

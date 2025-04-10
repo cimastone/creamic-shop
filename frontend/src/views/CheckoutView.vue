@@ -204,98 +204,12 @@ const submitOrder = async () => {
   
   try {
     let orderData;
-    let addressId = null;
     
+    // 判断使用哪种方式创建订单
     if (useAddressSelector.value) {
-      // 使用地址选择器，直接获取选中的地址ID
-      addressId = selectedAddressId.value;
-    } else {
-      // 使用手动输入的地址，先保存地址获取ID
-      try {
-        const addressData = {
-          receiverName: manualAddress.value.receiverName,
-          receiverPhone: manualAddress.value.receiverPhone,
-          province: '未指定',  // 提供默认值
-          city: '未指定',      // 提供默认值
-          district: '未指定',  // 提供默认值
-          detailAddress: manualAddress.value.receiverAddress,
-          isDefault: false     // 不设为默认地址
-        };
-        
-        console.log('创建新地址:', JSON.stringify(addressData));
-        
-        // 导入createAddress函数
-        const { createAddress } = await import('@/api/address');
-        const addressResponse = await createAddress(addressData);
-        
-        // 适配新的响应格式
-        if ((addressResponse.data && addressResponse.data.code === 0) || addressResponse.code === 0) {
-          // 从响应中提取地址ID
-          let createdAddress;
-          if (addressResponse.data && addressResponse.data.data) {
-            createdAddress = addressResponse.data.data;
-          } else if (addressResponse.data) {
-            createdAddress = addressResponse.data;
-          } else {
-            createdAddress = addressResponse;
-          }
-          
-          addressId = createdAddress.id;
-          console.log('地址创建成功，ID:', addressId);
-        } else {
-          const errorMsg = (addressResponse.data && addressResponse.data.message) ||
-                          addressResponse.message ||
-                          '创建地址失败';
-          throw new Error(errorMsg);
-        }
-      } catch (error) {
-        console.error('创建地址失败:', error);
-        
-        // 检查是否是登录过期错误
-        if (error.message.includes('登录已过期') || error.message.includes('未授权')) {
-          // 保存当前页面状态
-          const currentState = {
-            manualAddress: manualAddress.value,
-            orderInfo: orderInfo.value,
-            cartItems: cart.items
-          };
-          localStorage.setItem('checkoutState', JSON.stringify(currentState));
-          
-          // 跳转到登录页面，并指定返回地址
-          router.push(`/login?redirect=${encodeURIComponent('/checkout')}`);
-          return;
-        }
-        
-        // 其他错误，询问用户是否使用当前地址
-        const useDirectOrderCreation = confirm(`创建地址失败: ${error.message || '未知错误'}\n\n您希望直接使用当前输入的地址信息提交订单吗？`);
-        
-        if (useDirectOrderCreation) {
-          // 直接使用手动输入的地址信息创建订单
-          orderData = {
-            receiverName: manualAddress.value.receiverName,
-            receiverPhone: manualAddress.value.receiverPhone,
-            receiverAddress: manualAddress.value.receiverAddress,
-            items: cart.items.map(item => ({
-              productId: item.id,
-              productName: item.name,
-              productImage: item.image,
-              productSpecs: item.specs || '默认规格',
-              unitPrice: item.price,
-              quantity: item.quantity
-            }))
-          };
-        } else {
-          isSubmitting.value = false;
-          return;
-        }
-      }
-    }
-    
-    // 如果使用地址ID方式或成功创建了地址
-    if (addressId) {
-      // 创建订单数据，使用获取到的addressId
+      // 方式1：使用地址选择器，通过地址ID创建订单
       orderData = {
-        addressId: addressId,
+        addressId: selectedAddressId.value,
         items: cart.items.map(item => ({
           productId: item.id,
           productName: item.name,
@@ -305,42 +219,69 @@ const submitOrder = async () => {
           quantity: item.quantity
         }))
       };
+    } else {
+      // 方式2：直接使用手动输入的地址信息创建订单
+      orderData = {
+        receiverName: manualAddress.value.receiverName,
+        receiverPhone: manualAddress.value.receiverPhone,
+        receiverAddress: manualAddress.value.receiverAddress,
+        items: cart.items.map(item => ({
+          productId: item.id,
+          productName: item.name,
+          productImage: item.image,
+          productSpecs: item.specs || '默认规格',
+          unitPrice: item.price,
+          quantity: item.quantity
+        }))
+      };
+    }
+    
+    console.log('提交订单数据:', JSON.stringify(orderData));
+    
+    const response = await createOrder(orderData);
+    console.log('订单创建响应:', response);
+    
+    // 使用标准化的响应处理
+    if (response.success) {
+      // 清空购物车
+      cart.clearCart();
       
-      console.log('提交订单数据:', JSON.stringify(orderData));
+      // 获取订单ID
+      const orderData = response.data;
+      let orderId;
       
-      const response = await createOrder(orderData)
+      if (orderData && orderData.id) {
+        // 直接从响应中获取ID
+        orderId = orderData.id;
+      }
       
-      // 适配新的响应格式
-      if ((response.data && response.data.code === 0) || response.code === 0) {
-        // 清空购物车
-        cart.clearCart()
-        
-        // 获取订单ID
-        let orderId;
-        if (response.data && response.data.data) {
-          orderId = response.data.data.id;
-        } else if (response.data) {
-          orderId = response.data.id;
-        } else {
-          orderId = response.id;
-        }
-        
-        // 跳转到支付页面或订单详情页
-        router.push(`/orders/${orderId}`)
+      if (orderId) {
+        // 跳转到订单详情页
+        router.push(`/orders/${orderId}`);
       } else {
-        const errorMsg = (response.data && response.data.message) || 
-                        response.message || 
-                        '订单创建失败，请稍后重试';
-        alert(errorMsg);
+        // 如果找不到订单ID，跳转到订单列表页
+        alert('订单创建成功，查看所有订单');
+        router.push('/orders');
       }
     } else {
-      alert('无法获取有效的地址ID');
+      // 处理失败情况
+      alert(response.message || '订单创建失败，请稍后重试');
     }
   } catch (error) {
-    console.error('提交订单失败:', error)
-    alert('订单创建失败，请稍后重试')
+    console.error('提交订单失败:', error);
+    
+    // 检查是否成功但被错误处理
+    if (error.success === true) {
+      cart.clearCart();
+      alert('订单创建成功！');
+      router.push('/orders');
+      return;
+    }
+    
+    // 显示错误信息
+    alert(error.message || '订单创建失败，请稍后重试');
   } finally {
-    isSubmitting.value = false
+    isSubmitting.value = false;
   }
 }
 

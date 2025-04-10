@@ -30,7 +30,7 @@ public class ShippingAddressController {
     public ApiResponse<ShippingAddressDTO> getAddressByOrderId(@PathVariable Long orderId) {
         Optional<ShippingAddressDTO> addressOpt = addressService.getAddressByOrderId(orderId);
         return addressOpt.map(ApiResponse::success)
-                .orElseGet(() -> ApiResponse.error("订单物流地址不存在"));
+                .orElseThrow(() -> new IllegalArgumentException("订单物流地址不存在"));
     }
 
     /**
@@ -38,12 +38,8 @@ public class ShippingAddressController {
      */
     @GetMapping("/{id}")
     public ApiResponse<ShippingAddressDTO> getAddressDetail(@PathVariable Long id) {
-        try {
-            ShippingAddressDTO address = addressService.getAddressById(id);
-            return ApiResponse.success(address);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
-        }
+        ShippingAddressDTO address = addressService.getAddressById(id);
+        return ApiResponse.success(address);
     }
 
     /**
@@ -52,11 +48,7 @@ public class ShippingAddressController {
     @PutMapping("/{id}")
     public ApiResponse<ShippingAddressDTO> updateAddress(@PathVariable Long id,
                                                       @RequestBody ShippingAddressDTO addressDTO) {
-        try {
-            ShippingAddressDTO updatedAddress = addressService.updateAddress(id, addressDTO);
-            return ApiResponse.success(updatedAddress);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(e.getMessage());
-        }
+        ShippingAddressDTO updatedAddress = addressService.updateAddress(id, addressDTO);
+        return ApiResponse.success(updatedAddress);
     }
 } 

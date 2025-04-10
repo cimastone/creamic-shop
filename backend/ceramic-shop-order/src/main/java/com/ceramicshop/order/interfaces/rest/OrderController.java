@@ -3,12 +3,12 @@ package com.ceramicshop.order.interfaces.rest;
 import com.ceramicshop.order.application.OrderApplicationService;
 import com.ceramicshop.order.application.dto.AddressDTO;
 import com.ceramicshop.order.application.dto.OrderDTO;
-import com.ceramicshop.order.application.dto.OrderItemDTO;
 import com.ceramicshop.order.domain.model.OrderStatus;
 import com.ceramicshop.order.interfaces.rest.request.CreateOrderRequest;
 import com.ceramicshop.order.interfaces.rest.response.ApiResponse;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
@@ -29,7 +29,7 @@ public class OrderController {
      * 创建订单
      */
     @PostMapping
-    public ApiResponse<OrderDTO> createOrder(@RequestBody CreateOrderRequest request, @RequestHeader("Authorization") String token) {
+    public ApiResponse<OrderDTO> createOrder(@Valid @RequestBody CreateOrderRequest request, @RequestHeader("Authorization") String token) {
         // 提取用户ID
         Long userId = extractUserIdFromToken(token);
         
@@ -183,30 +183,26 @@ public class OrderController {
             tokenValue = token.substring(7);
         }
 
-        try {
-            // 在实际项目中，这里应该使用JWT库验证token
-            // 这里简化处理，假设token格式为"mock-token-for-user-123"
-            if (!tokenValue.startsWith("mock-token-for-user-")) {
-                throw new IllegalArgumentException("无效的token格式");
-            }
-
-            String userIdStr = tokenValue.replace("mock-token-for-user-", "");
-            Long userId = Long.parseLong(userIdStr);
-
-            // 验证用户ID是否有效
-            if (userId <= 0) {
-                throw new IllegalArgumentException("无效的用户ID");
-            }
-
-            System.out.println("成功提取用户ID: " + userId);
-            return userId;
-
-        } catch (NumberFormatException e) {
-            System.err.println("Token解析失败: " + e.getMessage());
-            throw new IllegalArgumentException("无效的token格式: " + token, e);
-        } catch (Exception e) {
-            System.err.println("Token验证失败: " + e.getMessage());
-            throw new IllegalArgumentException("Token验证失败: " + e.getMessage(), e);
+        // 在实际项目中，这里应该使用JWT库验证token
+        // 这里简化处理，假设token格式为"mock-token-for-user-123"
+        if (!tokenValue.startsWith("mock-token-for-user-")) {
+            throw new IllegalArgumentException("无效的token格式");
         }
+
+        String userIdStr = tokenValue.replace("mock-token-for-user-", "");
+        Long userId;
+        try {
+            userId = Long.parseLong(userIdStr);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("无效的token格式: " + token);
+        }
+
+        // 验证用户ID是否有效
+        if (userId <= 0) {
+            throw new IllegalArgumentException("无效的用户ID");
+        }
+
+        System.out.println("成功提取用户ID: " + userId);
+        return userId;
     }
 } 

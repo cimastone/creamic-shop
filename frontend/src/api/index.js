@@ -48,41 +48,82 @@ const applyInterceptors = (instance) => {
     response => {
       // 检查响应状态
       if (response.status >= 200 && response.status < 300) {
-        // 对于登录接口直接返回整个响应
-        if (response.config.url.includes('/api/users/login')) {
-          return response;
+        const data = response.data;
+        
+        // 处理特殊情况：字符串响应，直接返回标准化结构
+        if (typeof data === 'string') {
+          console.log(`接收到字符串响应: "${data}"`);
+          return {
+            success: true,
+            message: data,
+            data: null
+          };
         }
         
-        // 检查是否有code字段（自定义响应格式）
-        if (response.data && response.data.hasOwnProperty('code')) {
-          if (response.data.code === 200) {
-            return response.data;
-          } else {
-            // 处理业务错误
-            const error = new Error(response.data?.message || '请求失败');
-            error.response = response;
-            return Promise.reject(error);
+        // 检查是否有标准API响应结构
+        if (data && typeof data === 'object') {
+          // 处理标准API响应格式 {code, message, data}
+          if (data.hasOwnProperty('code')) {
+            const isSuccess = data.code === 0 || data.code === 200;
+            return {
+              success: isSuccess,
+              message: data.message || (isSuccess ? 'success' : 'error'),
+              data: data.data || null
+            };
           }
+          
+          // 其他情况直接包装返回
+          return {
+            success: true,
+            message: 'success',
+            data: data
+          };
         }
         
-        // 标准HTTP响应
-        return response.data;
+        // 兜底处理
+        return {
+          success: true,
+          message: 'success',
+          data: data
+        };
       }
+      
+      // HTTP错误状态直接返回
       return response;
     },
     error => {
       console.error('API错误:', error);
       
+      // 如果有响应对象
       if (error.response) {
-        console.error('错误状态:', error.response.status);
-        console.error('错误数据:', error.response.data);
+        console.log('错误状态:', error.response.status);
+        console.log('错误数据:', error.response.data);
         
-        // 对于登录接口的错误，直接返回
-        if (error.config.url.includes('/api/users/login')) {
-          return Promise.reject(error);
+        // 尝试获取错误信息
+        let errorMessage = '未知错误';
+        let errorData = null;
+        
+        const responseData = error.response.data;
+        
+        // 处理字符串类型响应
+        if (typeof responseData === 'string') {
+          // 如果响应是"success"字符串，特殊处理
+          if (responseData === 'success') {
+            return {
+              success: true,
+              message: 'success',
+              data: null
+            };
+          }
+          errorMessage = responseData;
+        } 
+        // 处理对象类型响应
+        else if (responseData && typeof responseData === 'object') {
+          errorMessage = responseData.message || responseData.error || '请求失败';
+          errorData = responseData.data;
         }
         
-        // 根据状态码提供更具体的错误信息
+        // 根据状态码处理特定错误
         if (error.response.status === 401) {
           // 未授权，清除token
           localStorage.removeItem('token');
@@ -101,18 +142,31 @@ const applyInterceptors = (instance) => {
             window.location.href = `/login?redirect=${encodeURIComponent(currentPath + currentQuery)}`;
           }
           
-          return Promise.reject(new Error('登录已过期，请重新登录'));
-        } else if (error.response.status === 400) {
-          const message = error.response.data?.message || error.response.data?.error || '请求参数错误';
-          return Promise.reject(new Error(message));
-        } else if (error.response.status === 500) {
-          return Promise.reject(new Error('服务器内部错误，请稍后再试'));
+          errorMessage = '登录已过期，请重新登录';
         }
-      } else if (error.request) {
-        return Promise.reject(new Error('无法连接到服务器，请检查您的网络连接'));
+        
+        return Promise.reject({
+          success: false,
+          message: errorMessage,
+          data: errorData,
+          status: error.response.status
+        });
+      } 
+      // 网络错误
+      else if (error.request) {
+        return Promise.reject({
+          success: false,
+          message: '无法连接到服务器，请检查您的网络连接',
+          data: null
+        });
       }
       
-      return Promise.reject(error);
+      // 其他错误
+      return Promise.reject({
+        success: false,
+        message: error.message || '发生未知错误',
+        data: null
+      });
     }
   )
 }

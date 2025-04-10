@@ -28,16 +28,20 @@ public class Order {
     private LocalDateTime deliveryTime;
     private LocalDateTime completeTime;
     private LocalDateTime closeTime;
-    private Long addressId;
-    private Long logisticsId;
-    private String recipientName;
-    private String recipientPhone;
-    private String recipientAddress;
     private String shippingMethod;
     private String paymentMethod;
     private String remark;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    
+    // 移除简单的收货人信息，改用值对象
+    // private Long addressId;
+    // private String recipientName;
+    // private String recipientPhone;
+    // private String recipientAddress;
+    
+    // 添加收货地址值对象
+    private ShippingAddress shippingAddress;
     
     private List<OrderItem> orderItems;
     
@@ -54,7 +58,7 @@ public class Order {
     /**
      * 创建新订单
      */
-    public static Order create(Long userId, Long addressId, String remark, List<OrderItem> orderItems) {
+    public static Order create(Long userId, ShippingAddress shippingAddress, String remark, List<OrderItem> orderItems) {
         if (userId == null) {
             throw new IllegalArgumentException("用户ID不能为空");
         }
@@ -63,15 +67,23 @@ public class Order {
             throw new IllegalArgumentException("订单项不能为空");
         }
         
+        if (shippingAddress == null) {
+            throw new IllegalArgumentException("收货地址不能为空");
+        }
+        
         Order order = new Order();
         order.userId = userId;
-        order.addressId = addressId;
+        order.shippingAddress = shippingAddress;
         order.remark = remark;
         order.orderNumber = generateOrderNumber();
         order.totalAmount = calculateTotalAmount(orderItems);
         order.paymentAmount = order.totalAmount;
         order.shippingFee = BigDecimal.ZERO;
         order.discountAmount = BigDecimal.ZERO;
+        
+        // 设置默认值
+        order.shippingMethod = "STANDARD";   // 默认配送方式
+        order.paymentMethod = "ONLINE";      // 默认支付方式
         
         // 添加订单项
         orderItems.forEach(item -> {
@@ -142,12 +154,14 @@ public class Order {
     }
     
     /**
-     * 设置收货人信息
+     * 更新收货地址信息
      */
-    public void setRecipientInfo(String name, String phone, String address) {
-        this.recipientName = name;
-        this.recipientPhone = phone;
-        this.recipientAddress = address;
+    public void updateShippingAddress(ShippingAddress shippingAddress) {
+        if (shippingAddress == null) {
+            throw new IllegalArgumentException("收货地址不能为空");
+        }
+        this.shippingAddress = shippingAddress;
+        this.updateTime = LocalDateTime.now();
     }
     
     /**

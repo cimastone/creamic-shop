@@ -64,34 +64,32 @@ CREATE TABLE IF NOT EXISTS `t_user_address` (
 CREATE INDEX idx_address_user_id ON `t_user_address`(user_id);
 
 -- 订单模块表
-CREATE TABLE IF NOT EXISTS `order` (
+CREATE TABLE IF NOT EXISTS `orders` (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    order_no VARCHAR(50) NOT NULL COMMENT '订单编号',
+    order_number VARCHAR(50) NOT NULL COMMENT '订单编号',
     user_id BIGINT NOT NULL COMMENT '用户ID',
     total_amount DECIMAL(10,2) NOT NULL COMMENT '订单总金额',
     payment_amount DECIMAL(10,2) NOT NULL COMMENT '实付金额',
     shipping_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '运费',
     discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '优惠金额',
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING_PAYMENT' COMMENT '订单状态：PENDING_PAYMENT-待支付，PAID-已支付，SHIPPED-已发货，DELIVERED-已送达，COMPLETED-已完成，CANCELLED-已取消',
-    payment_time DATETIME COMMENT '支付时间',
-    shipping_time DATETIME COMMENT '发货时间',
+    pay_time DATETIME COMMENT '支付时间',
+    ship_time DATETIME COMMENT '发货时间',
     delivery_time DATETIME COMMENT '送达时间',
-    completion_time DATETIME COMMENT '完成时间',
-    cancellation_time DATETIME COMMENT '取消时间',
-    shipping_address_id BIGINT NOT NULL COMMENT '收货地址ID',
+    complete_time DATETIME COMMENT '完成时间',
+    close_time DATETIME COMMENT '取消时间',
     shipping_method VARCHAR(50) NOT NULL DEFAULT 'STANDARD' COMMENT '配送方式：STANDARD-标准配送，EXPRESS-快速配送',
     payment_method VARCHAR(50) NOT NULL DEFAULT 'ONLINE' COMMENT '支付方式：ONLINE-在线支付，COD-货到付款',
-    note TEXT COMMENT '订单备注',
+    remark TEXT COMMENT '订单备注',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    FOREIGN KEY (user_id) REFERENCES `t_user`(id),
-    FOREIGN KEY (shipping_address_id) REFERENCES `t_user_address`(id)
+    FOREIGN KEY (user_id) REFERENCES `t_user`(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单表';
 
-CREATE UNIQUE INDEX idx_order_order_no ON `order`(order_no);
-CREATE INDEX idx_order_user_id ON `order`(user_id);
-CREATE INDEX idx_order_status ON `order`(status);
-CREATE INDEX idx_order_create_time ON `order`(create_time);
+CREATE UNIQUE INDEX idx_orders_order_number ON `orders`(order_number);
+CREATE INDEX idx_orders_user_id ON `orders`(user_id);
+CREATE INDEX idx_orders_status ON `orders`(status);
+CREATE INDEX idx_orders_create_time ON `orders`(create_time);
 
 CREATE TABLE IF NOT EXISTS order_item (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -104,7 +102,7 @@ CREATE TABLE IF NOT EXISTS order_item (
     total_price DECIMAL(10,2) NOT NULL COMMENT '总价',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    FOREIGN KEY (order_id) REFERENCES `order`(id) ON DELETE CASCADE,
+    FOREIGN KEY (order_id) REFERENCES `orders`(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES product(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='订单明细表';
 
@@ -116,7 +114,7 @@ CREATE TABLE IF NOT EXISTS payment (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     payment_no VARCHAR(50) NOT NULL COMMENT '支付流水号',
     order_id BIGINT NOT NULL COMMENT '订单ID',
-    order_no VARCHAR(50) NOT NULL COMMENT '订单编号',
+    order_number VARCHAR(50) NOT NULL COMMENT '订单编号',
     user_id BIGINT NOT NULL COMMENT '用户ID',
     amount DECIMAL(10,2) NOT NULL COMMENT '支付金额',
     payment_method VARCHAR(50) NOT NULL COMMENT '支付方式：ALIPAY-支付宝，WECHAT-微信支付，CREDIT_CARD-信用卡',
@@ -125,13 +123,13 @@ CREATE TABLE IF NOT EXISTS payment (
     payment_time DATETIME COMMENT '支付时间',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    FOREIGN KEY (order_id) REFERENCES `order`(id),
+    FOREIGN KEY (order_id) REFERENCES `orders`(id),
     FOREIGN KEY (user_id) REFERENCES `t_user`(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='支付表';
 
 CREATE UNIQUE INDEX idx_payment_payment_no ON payment(payment_no);
 CREATE INDEX idx_payment_order_id ON payment(order_id);
-CREATE INDEX idx_payment_order_no ON payment(order_no);
+CREATE INDEX idx_payment_order_number ON payment(order_number);
 CREATE INDEX idx_payment_user_id ON payment(user_id);
 CREATE INDEX idx_payment_status ON payment(status);
 
@@ -172,25 +170,28 @@ CREATE TABLE IF NOT EXISTS shipping (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     shipping_no VARCHAR(50) NOT NULL COMMENT '物流单号',
     order_id BIGINT NOT NULL COMMENT '订单ID',
-    order_no VARCHAR(50) NOT NULL COMMENT '订单编号',
+    order_number VARCHAR(50) NOT NULL COMMENT '订单编号',
     carrier VARCHAR(50) NOT NULL COMMENT '物流承运商',
     tracking_number VARCHAR(100) COMMENT '物流追踪号',
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '物流状态：PENDING-待发货，SHIPPED-已发货，IN_TRANSIT-运输中，DELIVERED-已送达，RETURNED-已退回',
-    shipping_time DATETIME COMMENT '发货时间',
+    ship_time DATETIME COMMENT '发货时间',
     estimated_delivery_time DATETIME COMMENT '预计送达时间',
     actual_delivery_time DATETIME COMMENT '实际送达时间',
     shipping_fee DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '物流费用',
     receiver VARCHAR(50) NOT NULL COMMENT '收货人',
     receiver_phone VARCHAR(20) NOT NULL COMMENT '收货人电话',
-    shipping_address TEXT NOT NULL COMMENT '收货地址',
+    province VARCHAR(20) NOT NULL COMMENT '省份',
+    city VARCHAR(20) NOT NULL COMMENT '城市',
+    district VARCHAR(20) NOT NULL COMMENT '区/县',
+    detail_address VARCHAR(200) NOT NULL COMMENT '详细地址',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    FOREIGN KEY (order_id) REFERENCES `order`(id)
+    FOREIGN KEY (order_id) REFERENCES `orders`(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='物流表';
 
 CREATE UNIQUE INDEX idx_shipping_shipping_no ON shipping(shipping_no);
 CREATE INDEX idx_shipping_order_id ON shipping(order_id);
-CREATE INDEX idx_shipping_order_no ON shipping(order_no);
+CREATE INDEX idx_shipping_order_number ON shipping(order_number);
 CREATE INDEX idx_shipping_status ON shipping(status);
 
 CREATE TABLE IF NOT EXISTS shipping_tracking (
@@ -267,18 +268,53 @@ INSERT INTO `t_user_role` (`user_id`, `role_id`) VALUES
 (1, 1);
 
 -- 用户收货地址表
-CREATE TABLE `shipping_address` (
+CREATE TABLE `order_shipping_address` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '地址ID',
-  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `order_id` bigint(20) NOT NULL COMMENT '订单ID',
   `receiver_name` varchar(50) NOT NULL COMMENT '收货人姓名',
   `receiver_phone` varchar(20) NOT NULL COMMENT '收货人电话',
   `province` varchar(20) NOT NULL COMMENT '省份',
   `city` varchar(20) NOT NULL COMMENT '城市',
   `district` varchar(20) NOT NULL COMMENT '区/县',
   `detail_address` varchar(200) NOT NULL COMMENT '详细地址',
-  `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否默认地址：0-否，1-是',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户收货地址表'; 
+  CONSTRAINT `fk_shipping_address_order` 
+  FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) 
+  ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户收货地址表';
+
+ALTER TABLE `shipping` 
+DROP FOREIGN KEY `shipping_ibfk_1`,
+ADD CONSTRAINT `shipping_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders`(`id`),
+CHANGE COLUMN `order_no` `order_number` VARCHAR(50) NOT NULL COMMENT '订单编号';
+
+ALTER TABLE `shipping`
+DROP COLUMN `shipping_address`,
+ADD COLUMN `province` VARCHAR(20) NOT NULL COMMENT '省份',
+ADD COLUMN `city` VARCHAR(20) NOT NULL COMMENT '城市',
+ADD COLUMN `district` VARCHAR(20) NOT NULL COMMENT '区/县',
+ADD COLUMN `detail_address` VARCHAR(200) NOT NULL COMMENT '详细地址';
+
+ALTER TABLE `order_shipping_address`
+DROP COLUMN `user_id`,
+DROP COLUMN `is_default`,
+DROP INDEX `idx_user_id`;
+
+ALTER TABLE `order_item`
+DROP FOREIGN KEY `order_item_ibfk_1`,
+ADD CONSTRAINT `order_item_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE;
+
+ALTER TABLE `shipping`
+DROP FOREIGN KEY `shipping_ibfk_1`,
+ADD CONSTRAINT `shipping_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`);
+
+ALTER TABLE `orders`
+DROP COLUMN `shipping_address_id`,
+DROP COLUMN `receiver_name`,
+DROP COLUMN `receiver_phone`, 
+DROP COLUMN `receiver_province`,
+DROP COLUMN `receiver_city`,
+DROP COLUMN `receiver_district`,
+DROP COLUMN `receiver_detail_address`; 

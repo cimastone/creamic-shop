@@ -34,4 +34,9 @@ public interface ShippingAddressMapper {
      * 根据ID删除物流地址
      */
     int deleteById(Long id);
+    
+    /**
+     * 根据订单ID删除物流地址
+     */
+    int deleteByOrderId(Long orderId);
 } 

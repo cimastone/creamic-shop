@@ -3,11 +3,14 @@ package com.ceramicshop.order.infrastructure.persistence.repository;
 import com.ceramicshop.order.domain.model.Order;
 import com.ceramicshop.order.domain.model.OrderItem;
 import com.ceramicshop.order.domain.model.OrderStatus;
+import com.ceramicshop.order.domain.model.ShippingAddress;
 import com.ceramicshop.order.domain.repository.OrderRepository;
 import com.ceramicshop.order.infrastructure.persistence.mapper.OrderItemMapper;
 import com.ceramicshop.order.infrastructure.persistence.mapper.OrderMapper;
+import com.ceramicshop.order.infrastructure.persistence.mapper.ShippingAddressMapper;
 import com.ceramicshop.order.infrastructure.persistence.entity.OrderItemPO;
 import com.ceramicshop.order.infrastructure.persistence.entity.OrderPO;
+import com.ceramicshop.order.infrastructure.persistence.entity.ShippingAddressPO;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,10 +29,12 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final ShippingAddressMapper shippingAddressMapper;
 
-    public OrderRepositoryImpl(OrderMapper orderMapper, OrderItemMapper orderItemMapper) {
+    public OrderRepositoryImpl(OrderMapper orderMapper, OrderItemMapper orderItemMapper, ShippingAddressMapper shippingAddressMapper) {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
+        this.shippingAddressMapper = shippingAddressMapper;
     }
 
     @Override
@@ -43,6 +48,13 @@ public class OrderRepositoryImpl implements OrderRepository {
         
         // 设置订单ID
         order.setId(orderPO.getId());
+        
+        // 保存物流地址（值对象）
+        if (order.getShippingAddress() != null) {
+            ShippingAddressPO addressPO = toShippingAddressPO(order.getShippingAddress());
+            addressPO.setOrderId(order.getId());
+            shippingAddressMapper.insert(addressPO);
+        }
         
         // 保存订单项
         for (OrderItem item : order.getOrderItems()) {
@@ -65,8 +77,11 @@ public class OrderRepositoryImpl implements OrderRepository {
         // 查询订单项
         List<OrderItemPO> itemPOs = orderItemMapper.selectByOrderId(id);
         
+        // 查询物流地址
+        ShippingAddressPO addressPO = shippingAddressMapper.selectByOrderId(id);
+        
         // 转换为领域模型
-        return Optional.of(toDomain(orderPO, itemPOs));
+        return Optional.of(toDomain(orderPO, itemPOs, addressPO));
     }
 
     @Override
@@ -80,8 +95,11 @@ public class OrderRepositoryImpl implements OrderRepository {
         // 查询订单项
         List<OrderItemPO> itemPOs = orderItemMapper.selectByOrderId(orderPO.getId());
         
+        // 查询物流地址
+        ShippingAddressPO addressPO = shippingAddressMapper.selectByOrderId(orderPO.getId());
+        
         // 转换为领域模型
-        return Optional.of(toDomain(orderPO, itemPOs));
+        return Optional.of(toDomain(orderPO, itemPOs, addressPO));
     }
 
     @Override
@@ -96,7 +114,8 @@ public class OrderRepositoryImpl implements OrderRepository {
         List<Order> orders = new ArrayList<>(orderPOs.size());
         for (OrderPO orderPO : orderPOs) {
             List<OrderItemPO> itemPOs = orderItemMapper.selectByOrderId(orderPO.getId());
-            orders.add(toDomain(orderPO, itemPOs));
+            ShippingAddressPO addressPO = shippingAddressMapper.selectByOrderId(orderPO.getId());
+            orders.add(toDomain(orderPO, itemPOs, addressPO));
         }
         
         return orders;
@@ -114,7 +133,8 @@ public class OrderRepositoryImpl implements OrderRepository {
         List<Order> orders = new ArrayList<>(orderPOs.size());
         for (OrderPO orderPO : orderPOs) {
             List<OrderItemPO> itemPOs = orderItemMapper.selectByOrderId(orderPO.getId());
-            orders.add(toDomain(orderPO, itemPOs));
+            ShippingAddressPO addressPO = shippingAddressMapper.selectByOrderId(orderPO.getId());
+            orders.add(toDomain(orderPO, itemPOs, addressPO));
         }
         
         return orders;
@@ -127,6 +147,21 @@ public class OrderRepositoryImpl implements OrderRepository {
         OrderPO orderPO = toPO(order);
         orderMapper.update(orderPO);
         
+        // 更新物流地址
+        if (order.getShippingAddress() != null) {
+            ShippingAddressPO addressPO = toShippingAddressPO(order.getShippingAddress());
+            addressPO.setOrderId(order.getId());
+            
+            // 检查地址是否存在
+            ShippingAddressPO existingAddress = shippingAddressMapper.selectByOrderId(order.getId());
+            if (existingAddress != null) {
+                addressPO.setId(existingAddress.getId());
+                shippingAddressMapper.update(addressPO);
+            } else {
+                shippingAddressMapper.insert(addressPO);
+            }
+        }
+        
         // 更新订单项（如有需要）
         
         return order;
@@ -138,6 +173,9 @@ public class OrderRepositoryImpl implements OrderRepository {
         // 删除订单项
         orderItemMapper.deleteByOrderId(id);
         
+        // 删除物流地址
+        shippingAddressMapper.deleteByOrderId(id);
+        
         // 删除订单
         orderMapper.deleteById(id);
     }
@@ -145,7 +183,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     /**
      * 将订单PO转换为领域模型
      */
-    private Order toDomain(OrderPO po, List<OrderItemPO> itemPOs) {
+    private Order toDomain(OrderPO po, List<OrderItemPO> itemPOs, ShippingAddressPO addressPO) {
         try {
             // 使用反射获取包级私有构造方法
             Constructor<Order> constructor = Order.class.getDeclaredConstructor();
@@ -161,10 +199,6 @@ public class OrderRepositoryImpl implements OrderRepository {
             setFieldValue(order, "paymentAmount", po.getPaymentAmount());
             setFieldValue(order, "shippingFee", po.getShippingFee());
             setFieldValue(order, "discountAmount", po.getDiscountAmount());
-            setFieldValue(order, "addressId", po.getAddressId());
-            setFieldValue(order, "recipientName", po.getReceiverName());
-            setFieldValue(order, "recipientPhone", po.getReceiverPhone());
-            setFieldValue(order, "recipientAddress", po.getReceiverAddress());
             setFieldValue(order, "shippingMethod", po.getShippingMethod());
             setFieldValue(order, "paymentMethod", po.getPaymentMethod());
             setFieldValue(order, "remark", po.getRemark());
@@ -175,6 +209,12 @@ public class OrderRepositoryImpl implements OrderRepository {
             setFieldValue(order, "deliveryTime", po.getDeliveryTime());
             setFieldValue(order, "completeTime", po.getCompleteTime());
             setFieldValue(order, "closeTime", po.getCloseTime());
+            
+            // 设置物流地址值对象
+            if (addressPO != null) {
+                ShippingAddress address = toShippingAddressDomain(addressPO);
+                setFieldValue(order, "shippingAddress", address);
+            }
             
             // 设置订单项
             List<OrderItem> items = new ArrayList<>();
@@ -246,21 +286,53 @@ public class OrderRepositoryImpl implements OrderRepository {
         po.setPaymentAmount(order.getPaymentAmount());
         po.setShippingFee(order.getShippingFee());
         po.setDiscountAmount(order.getDiscountAmount());
-        po.setAddressId(order.getAddressId());
-        po.setReceiverName(order.getRecipientName());
-        po.setReceiverPhone(order.getRecipientPhone());
-        po.setReceiverAddress(order.getRecipientAddress());
-        po.setShippingMethod(order.getShippingMethod());
-        po.setPaymentMethod(order.getPaymentMethod());
-        po.setRemark(order.getRemark());
-        po.setCreateTime(order.getCreateTime());
-        po.setUpdateTime(LocalDateTime.now());
         po.setPayTime(order.getPayTime());
         po.setShipTime(order.getShipTime());
         po.setDeliveryTime(order.getDeliveryTime());
         po.setCompleteTime(order.getCompleteTime());
         po.setCloseTime(order.getCloseTime());
+        po.setShippingMethod(order.getShippingMethod());
+        po.setPaymentMethod(order.getPaymentMethod());
+        po.setRemark(order.getRemark());
+        po.setCreateTime(order.getCreateTime());
+        po.setUpdateTime(order.getUpdateTime());
         return po;
+    }
+    
+    /**
+     * 将物流地址值对象转换为PO
+     */
+    private ShippingAddressPO toShippingAddressPO(ShippingAddress address) {
+        ShippingAddressPO po = new ShippingAddressPO();
+        po.setId(address.getId());
+        po.setOrderId(address.getOrderId());
+        po.setReceiverName(address.getReceiverName());
+        po.setReceiverPhone(address.getReceiverPhone());
+        po.setProvince(address.getProvince());
+        po.setCity(address.getCity());
+        po.setDistrict(address.getDistrict());
+        po.setDetailAddress(address.getDetailAddress());
+        po.setCreateTime(address.getCreateTime());
+        po.setUpdateTime(address.getUpdateTime());
+        return po;
+    }
+    
+    /**
+     * 将物流地址PO转换为值对象
+     */
+    private ShippingAddress toShippingAddressDomain(ShippingAddressPO po) {
+        return ShippingAddress.builder()
+                .id(po.getId())
+                .orderId(po.getOrderId())
+                .receiverName(po.getReceiverName())
+                .receiverPhone(po.getReceiverPhone())
+                .province(po.getProvince())
+                .city(po.getCity())
+                .district(po.getDistrict())
+                .detailAddress(po.getDetailAddress())
+                .createTime(po.getCreateTime())
+                .updateTime(po.getUpdateTime())
+                .build();
     }
     
     /**

@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * 订单服务启动类
  */
 @SpringBootApplication
-@MapperScan("com.ceramicshop.order.infrastructure.mapper")
+@MapperScan("com.ceramicshop.order.infrastructure.persistence.mapper")
 public class OrderApplication {
     
     public static void main(String[] args) {

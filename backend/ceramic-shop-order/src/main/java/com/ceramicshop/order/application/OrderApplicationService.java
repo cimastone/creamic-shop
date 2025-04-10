@@ -6,6 +6,7 @@ import com.ceramicshop.order.application.dto.OrderItemDTO;
 import com.ceramicshop.order.domain.model.Order;
 import com.ceramicshop.order.domain.model.OrderItem;
 import com.ceramicshop.order.domain.model.OrderStatus;
+import com.ceramicshop.order.domain.model.ShippingAddress;
 import com.ceramicshop.order.domain.repository.OrderRepository;
 import com.ceramicshop.order.domain.service.OrderDomainService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +37,7 @@ public class OrderApplicationService {
     }
     
     /**
-     * 创建订单（通过地址ID）
+     * 创建订单
      * 
      * @param userId 用户ID
      * @param addressId 地址ID
@@ -71,8 +72,12 @@ public class OrderApplicationService {
                 ))
                 .collect(Collectors.toList());
         
+        // 获取用户地址并转换为ShippingAddress值对象
+        // 这里需要调用用户服务获取地址信息，暂时用模拟数据
+        ShippingAddress shippingAddress = createMockShippingAddressFromAddressId(addressId);
+        
         // 创建订单
-        Order order = Order.create(userId, addressId, null, domainOrderItems);
+        Order order = orderDomainService.createOrder(userId, shippingAddress, null, domainOrderItems);
         
         // 处理新订单业务逻辑
         orderDomainService.processNewOrder(order);
@@ -120,15 +125,11 @@ public class OrderApplicationService {
                 ))
                 .collect(Collectors.toList());
         
-        // 创建订单
-        Order order = Order.create(userId, null, null, domainOrderItems);
+        // 从AddressDTO创建ShippingAddress值对象
+        ShippingAddress shippingAddress = createShippingAddressFromDTO(null, addressDTO);
         
-        // 设置收货人信息
-        order.setRecipientInfo(
-                addressDTO.getReceiverName(),
-                addressDTO.getReceiverPhone(),
-                addressDTO.getReceiverAddress()
-        );
+        // 创建订单
+        Order order = orderDomainService.createOrder(userId, shippingAddress, null, domainOrderItems);
         
         // 处理新订单业务逻辑
         orderDomainService.processNewOrder(order);
@@ -136,11 +137,32 @@ public class OrderApplicationService {
         // 保存订单
         Order savedOrder = orderRepository.save(order);
         
-        // 创建物流地址记录
-        shippingAddressService.createAddress(savedOrder.getId(), addressDTO);
-        
         // 转换为DTO返回
         return convertToDTO(savedOrder);
+    }
+    
+    /**
+     * 根据地址ID创建模拟的ShippingAddress对象
+     * 实际项目中应该调用用户服务获取地址信息
+     */
+    private ShippingAddress createMockShippingAddressFromAddressId(Long addressId) {
+        // 模拟数据，实际应该调用用户服务获取地址信息
+        return ShippingAddress.builder()
+                .orderId(null)  // 订单ID在保存订单后设置
+                .receiverName("模拟用户")
+                .receiverPhone("13800138000")
+                .province("北京市")
+                .city("北京市")
+                .district("朝阳区")
+                .detailAddress("三里屯SOHO 1号楼")
+                .build();
+    }
+    
+    /**
+     * 从AddressDTO创建ShippingAddress值对象
+     */
+    private ShippingAddress createShippingAddressFromDTO(Long orderId, AddressDTO addressDTO) {
+        return ShippingAddress.fromAddressDTO(orderId, addressDTO);
     }
     
     /**
@@ -284,6 +306,21 @@ public class OrderApplicationService {
                         .build())
                 .collect(Collectors.toList());
         
+        // 准备地址信息
+        Long addressId = null;
+        String recipientName = null;
+        String recipientPhone = null;
+        String recipientAddress = null;
+        
+        // 从ShippingAddress获取地址信息
+        if (order.getShippingAddress() != null) {
+            ShippingAddress address = order.getShippingAddress();
+            addressId = address.getId();
+            recipientName = address.getReceiverName();
+            recipientPhone = address.getReceiverPhone();
+            recipientAddress = address.getFullAddress();
+        }
+        
         return OrderDTO.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
@@ -293,10 +330,10 @@ public class OrderApplicationService {
                 .paymentAmount(order.getPaymentAmount())
                 .shippingFee(order.getShippingFee())
                 .discountAmount(order.getDiscountAmount())
-                .addressId(order.getAddressId())
-                .recipientName(order.getRecipientName())
-                .recipientPhone(order.getRecipientPhone())
-                .recipientAddress(order.getRecipientAddress())
+                .addressId(addressId)
+                .recipientName(recipientName)
+                .recipientPhone(recipientPhone)
+                .recipientAddress(recipientAddress)
                 .shippingMethod(order.getShippingMethod())
                 .paymentMethod(order.getPaymentMethod())
                 .remark(order.getRemark())

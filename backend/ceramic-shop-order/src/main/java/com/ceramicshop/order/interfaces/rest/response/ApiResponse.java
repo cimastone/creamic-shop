@@ -42,16 +42,23 @@ public class ApiResponse<T> {
     }
     
     /**
-     * 失败响应
+     * 失败响应（无数据）
      */
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(1, message, null);
     }
     
     /**
-     * 失败响应
+     * 失败响应（无数据）
      */
     public static <T> ApiResponse<T> error(int code, String message) {
         return new ApiResponse<>(code, message, null);
+    }
+    
+    /**
+     * 失败响应（带数据）
+     */
+    public static <T> ApiResponse<T> error(int code, String message, T data) {
+        return new ApiResponse<>(code, message, data);
     }
 } 

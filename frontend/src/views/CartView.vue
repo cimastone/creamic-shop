@@ -60,7 +60,6 @@ import { useUserStore } from '../stores/user'
 import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
-const route = useRoute()
 const cartStore = useCartStore()
 const userStore = useUserStore()
 

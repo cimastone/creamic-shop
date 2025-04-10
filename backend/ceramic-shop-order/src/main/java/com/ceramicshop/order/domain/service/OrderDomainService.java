@@ -2,6 +2,7 @@ package com.ceramicshop.order.domain.service;
 
 import com.ceramicshop.order.domain.model.Order;
 import com.ceramicshop.order.domain.model.OrderItem;
+import com.ceramicshop.order.domain.model.ShippingAddress;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,7 +15,7 @@ public interface OrderDomainService {
     /**
      * 创建订单
      */
-    Order createOrder(Long userId, Long addressId, String remark, List<OrderItem> orderItems);
+    Order createOrder(Long userId, ShippingAddress shippingAddress, String remark, List<OrderItem> orderItems);
     
     /**
      * 支付订单

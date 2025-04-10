@@ -16,7 +16,11 @@ import { orderApi } from './index'
  */
 export function createOrder(orderData) {
   console.log("提交订单数据:", JSON.stringify(orderData));
-  return orderApi.post('/api/orders', orderData);
+  return orderApi.post('/api/orders', orderData, {
+    headers: {
+      'Accept': 'application/json, text/plain, */*'
+    }
+  });
 }
 
 /**

@@ -77,31 +77,6 @@ public class OrderPO {
     private LocalDateTime closeTime;
     
     /**
-     * 收货地址ID
-     */
-    private Long addressId;
-    
-    /**
-     * 物流ID
-     */
-    private Long logisticsId;
-    
-    /**
-     * 收货人姓名
-     */
-    private String receiverName;
-    
-    /**
-     * 收货人电话
-     */
-    private String receiverPhone;
-    
-    /**
-     * 收货人地址
-     */
-    private String receiverAddress;
-    
-    /**
      * 配送方式
      */
     private String shippingMethod;
