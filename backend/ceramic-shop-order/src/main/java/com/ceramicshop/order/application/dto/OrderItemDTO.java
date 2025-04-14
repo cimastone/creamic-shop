@@ -48,9 +48,14 @@ public class OrderItemDTO {
     private String productSpecs;
     
     /**
-     * 单价
+     * 单价 (旧字段名，为了向后兼容)
      */
     private BigDecimal unitPrice;
+    
+    /**
+     * 单价 (新字段名，与数据库一致)
+     */
+    private BigDecimal price;
     
     /**
      * 购买数量

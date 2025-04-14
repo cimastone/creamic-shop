@@ -33,7 +33,7 @@
             </p>
           </div>
 
-          <p class="product-price">¥{{ product.price.toFixed(2) }}</p>
+          <p class="product-price">¥{{ product.price?.toFixed(2) || '0.00' }}</p>
           
           <div class="product-description">
             <h3>产品描述</h3>
@@ -72,7 +72,7 @@
             </div>
             <div class="related-product-info">
               <h3 class="related-product-name">{{ relatedProduct.name }}</h3>
-              <p class="related-product-price">¥{{ relatedProduct.price.toFixed(2) }}</p>
+              <p class="related-product-price">¥{{ relatedProduct.price?.toFixed(2) || '0.00' }}</p>
             </div>
           </div>
         </div>
@@ -156,6 +156,20 @@ export default {
         const categoryForAPI = reverseCategoryMap[category] || category;
         
         const response = await productApi.getProductsByCategory(categoryForAPI);
+        console.log('相关产品响应:', response);
+        
+        // 确保响应是数组
+        let productsData = [];
+        if (Array.isArray(response)) {
+          productsData = response;
+        } else if (response && Array.isArray(response.data)) {
+          productsData = response.data;
+        } else if (response && response.data && Array.isArray(response.data.data)) {
+          productsData = response.data.data;
+        } else {
+          console.warn('未能识别相关产品数据格式:', response);
+          productsData = [];
+        }
         
         // 中英文映射
         const categoryMap = {
@@ -166,7 +180,7 @@ export default {
         };
         
         // 转换响应中的产品分类为中文
-        const productsWithChineseCategories = response.map(p => {
+        const productsWithChineseCategories = productsData.map(p => {
           if (p.category && categoryMap[p.category]) {
             return {...p, category: categoryMap[p.category]};
           }

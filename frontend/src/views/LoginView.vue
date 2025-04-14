@@ -1,49 +1,60 @@
 <template>
   <div class="login-container">
-    <div class="login-form">
-      <h1>登录</h1>
-      
-      <!-- 注册成功提示 -->
-      <div v-if="registrationSuccess" class="success-message">
-        注册成功！请使用您的账号密码登录。
-      </div>
-      
-      <form @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label for="username">用户名</label>
-          <input 
-            id="username" 
-            v-model="username" 
-            type="text" 
-            required 
-            placeholder="请输入用户名"
-          />
+    <div class="login-form-wrapper">
+      <div class="login-form">
+        <h1>登录</h1>
+        
+        <!-- 注册成功提示 -->
+        <div v-if="registrationSuccess" class="success-message">
+          <i class="success-icon">✓</i>
+          注册成功！请使用您的账号密码登录。
         </div>
         
-        <div class="form-group">
-          <label for="password">密码</label>
-          <input 
-            id="password" 
-            v-model="password" 
-            type="password" 
-            required
-            placeholder="请输入密码"
-          />
-        </div>
-        
-        <div v-if="errorMessage" class="error-message">
-          {{ errorMessage }}
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" :disabled="isLoading">
-            {{ isLoading ? '登录中...' : '登录' }}
-          </button>
-          <div class="register-link">
-            还没有账号？<router-link to="/register">立即注册</router-link>
+        <form @submit.prevent="handleLogin">
+          <div class="form-group">
+            <label for="username">用户名</label>
+            <div class="input-wrapper">
+              <i class="input-icon">👤</i>
+              <input 
+                id="username" 
+                v-model="username" 
+                type="text" 
+                required 
+                placeholder="请输入用户名"
+              />
+            </div>
           </div>
-        </div>
-      </form>
+          
+          <div class="form-group">
+            <label for="password">密码</label>
+            <div class="input-wrapper">
+              <i class="input-icon">🔒</i>
+              <input 
+                id="password" 
+                v-model="password" 
+                type="password" 
+                required
+                placeholder="请输入密码"
+              />
+            </div>
+          </div>
+          
+          <div v-if="errorMessage" class="error-message">
+            <i class="error-icon">❌</i>
+            {{ errorMessage }}
+          </div>
+          
+          <div class="form-actions">
+            <button type="submit" :disabled="isLoading" class="submit-button">
+              <span class="button-text">{{ isLoading ? '登录中...' : '登录' }}</span>
+              <span v-if="isLoading" class="loading-spinner"></span>
+            </button>
+            <div class="register-link">
+              还没有账号？<router-link to="/register">立即注册</router-link>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
@@ -123,95 +134,191 @@ const handleLogin = async () => {
   align-items: center;
   min-height: 80vh;
   padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+}
+
+.login-form-wrapper {
+  width: 100%;
+  max-width: 420px;
+  padding: 15px;
 }
 
 .login-form {
   width: 100%;
-  max-width: 400px;
-  padding: 30px;
+  padding: 35px;
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s, box-shadow 0.3s;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.login-form:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 h1 {
   text-align: center;
-  margin-bottom: 24px;
-  color: #333;
+  margin-bottom: 30px;
+  color: var(--primary-color);
+  font-size: 28px;
+  font-weight: 600;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  font-style: normal;
 }
 
 input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 12px 12px 12px 40px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   font-size: 16px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
 }
 
 .error-message {
-  color: #ff4d4f;
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  color: var(--error-color);
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: #fff2f0;
+  border-radius: 8px;
+  border-left: 3px solid var(--error-color);
+  font-size: 14px;
 }
 
-button {
+.error-icon {
+  margin-right: 8px;
+  font-style: normal;
+}
+
+.submit-button {
+  position: relative;
   width: 100%;
-  padding: 12px;
-  background: #1677ff;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 16px;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-button:hover {
-  background: #0958d9;
+.submit-button:hover {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, #0d47a1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
 }
 
-button:disabled {
-  background: #95b8ff;
+.submit-button:disabled {
+  background: #b7c6d8;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.button-text {
+  z-index: 2;
+}
+
+.loading-spinner {
+  position: absolute;
+  right: 15px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .register-link {
   text-align: center;
-  margin-top: 16px;
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .register-link a {
-  color: #1677ff;
+  color: var(--primary-color);
+  font-weight: 500;
+  transition: color 0.3s;
   text-decoration: none;
 }
 
 .register-link a:hover {
+  color: var(--primary-dark);
   text-decoration: underline;
 }
 
 .success-message {
-  color: #52c41a;
-  margin-bottom: 16px;
-  padding: 10px;
-  background-color: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: 4px;
   display: flex;
   align-items: center;
+  color: var(--success-color);
+  margin-bottom: 20px;
+  padding: 12px;
+  background-color: #f6ffed;
+  border-radius: 8px;
+  border-left: 3px solid var(--success-color);
+  font-size: 14px;
+  animation: slideDown 0.5s ease-out;
 }
 
-.success-message::before {
-  content: "✓";
+.success-icon {
   margin-right: 8px;
+  font-style: normal;
   font-weight: bold;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style> 

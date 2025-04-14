@@ -67,7 +67,7 @@ public class OrderApplicationService {
                         dto.getProductName(),
                         dto.getProductImage(),
                         dto.getProductSpecs(),
-                        dto.getUnitPrice(),
+                        dto.getPrice() != null ? dto.getPrice() : dto.getUnitPrice(),
                         dto.getQuantity()
                 ))
                 .collect(Collectors.toList());
@@ -120,7 +120,7 @@ public class OrderApplicationService {
                         dto.getProductName(),
                         dto.getProductImage(),
                         dto.getProductSpecs(),
-                        dto.getUnitPrice(),
+                        dto.getPrice() != null ? dto.getPrice() : dto.getUnitPrice(),
                         dto.getQuantity()
                 ))
                 .collect(Collectors.toList());
@@ -301,6 +301,7 @@ public class OrderApplicationService {
                         .productImage(item.getProductImage())
                         .productSpecs(item.getProductSpecs())
                         .unitPrice(item.getPrice())
+                        .price(item.getPrice())
                         .quantity(item.getQuantity())
                         .subtotal(item.getSubtotal())
                         .build())

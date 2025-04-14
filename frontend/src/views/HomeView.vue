@@ -66,12 +66,29 @@ const fetchCategories = async () => {
       'vases': '花瓶'
     }
     
-    categories.value = response.map(cat => ({
+    // 正确处理响应数据结构
+    let categoryData = []
+    
+    if (Array.isArray(response)) {
+      categoryData = response
+    } else if (response && Array.isArray(response.data)) {
+      categoryData = response.data
+    } else if (response && response.data && Array.isArray(response.data.data)) {
+      categoryData = response.data.data
+    } else if (response && response.success && Array.isArray(response.data)) {
+      categoryData = response.data
+    } else {
+      console.error('无法解析分类数据:', response)
+      categoryData = []
+    }
+    
+    categories.value = categoryData.map(cat => ({
       id: cat,
       name: categoryMap[cat] || cat // 如果有映射则使用中文，否则使用原值
     }))
   } catch (error) {
     console.error('获取分类列表失败:', error)
+    categories.value = [] // 确保失败时至少有一个空数组
   } finally {
     loadingCategories.value = false
   }

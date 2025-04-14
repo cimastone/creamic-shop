@@ -28,7 +28,7 @@
             <img :src="item.productImage" alt="商品图片" class="product-image" />
             <div class="product-info">
               <div class="product-name">{{ item.productName }}</div>
-              <div class="product-price">¥{{ item.unitPrice }} × {{ item.quantity }}</div>
+              <div class="product-price">¥{{ item.price || item.unitPrice }} × {{ item.quantity }}</div>
             </div>
           </div>
         </div>
@@ -133,13 +133,21 @@ const fetchOrders = async () => {
   try {
     let res
     if (currentTab.value === 'ALL') {
-      res = await getUserOrders(userStore.userInfo.id)
+      res = await getUserOrders()
     } else {
-      res = await getUserOrdersByStatus(userStore.userInfo.id, currentTab.value)
+      res = await getUserOrdersByStatus(currentTab.value)
     }
-    orders.value = res
+    
+    // 确保orders是一个数组
+    if (Array.isArray(res)) {
+      orders.value = res
+    } else {
+      console.warn('获取到的订单数据不是数组:', res)
+      orders.value = []
+    }
   } catch (error) {
     console.error('获取订单列表失败:', error)
+    orders.value = [] // 发生错误时设置为空数组
   } finally {
     isLoading.value = false
   }

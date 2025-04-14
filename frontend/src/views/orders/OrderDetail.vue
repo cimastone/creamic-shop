@@ -62,9 +62,9 @@
               <div class="product-name">{{ item.productName }}</div>
               <div class="product-specs">{{ item.specs || '默认规格' }}</div>
             </div>
-            <div class="product-price">¥{{ item.unitPrice }}</div>
+            <div class="product-price">¥{{ item.price || item.unitPrice }}</div>
             <div class="product-quantity">× {{ item.quantity }}</div>
-            <div class="product-subtotal">¥{{ (item.unitPrice * item.quantity).toFixed(2) }}</div>
+            <div class="product-subtotal">¥{{ ((item.price || item.unitPrice) * item.quantity).toFixed(2) }}</div>
           </div>
         </div>
         

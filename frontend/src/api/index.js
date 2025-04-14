@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // 创建用户服务API实例
 const userApi = axios.create({
-  baseURL: import.meta.env.VITE_API_USER_URL || 'http://localhost:8082/user',
+  baseURL: '',  // 开发时使用空，由Vite代理处理
   headers: {
     'Content-Type': 'application/json'
   },
@@ -11,7 +11,7 @@ const userApi = axios.create({
 
 // 创建产品服务API实例
 const productApi = axios.create({
-  baseURL: import.meta.env.VITE_API_PRODUCT_URL || 'http://localhost:8081/product',
+  baseURL: '',  // 开发时使用空，由Vite代理处理
   headers: {
     'Content-Type': 'application/json'
   },
@@ -20,7 +20,7 @@ const productApi = axios.create({
 
 // 创建订单服务API实例
 const orderApi = axios.create({
-  baseURL: import.meta.env.VITE_API_ORDER_URL || 'http://localhost:8003/order',
+  baseURL: '',  // 开发时使用空，由Vite代理处理
   headers: {
     'Content-Type': 'application/json'
   },

@@ -122,21 +122,16 @@ import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import { createOrder } from '@/api/order'
+import AddressSelector from '@/components/AddressSelector.vue'
 
-// 有条件地导入 AddressSelector 组件
-let AddressSelector = null;
-try {
-  AddressSelector = require('@/components/AddressSelector.vue').default;
-} catch (error) {
-  console.error('加载地址选择器组件失败:', error);
-}
+// 是否使用地址选择器组件
+const useAddressSelector = ref(true) // 默认使用地址选择器
 
 const router = useRouter()
 const cart = useCartStore()
 const userStore = useUserStore()
 const isSubmitting = ref(false)
 const selectedAddressId = ref(null)
-const useAddressSelector = ref(!!AddressSelector) // 根据组件是否加载成功来决定使用哪种模式
 
 // 手动输入地址（备选方案）
 const manualAddress = ref({

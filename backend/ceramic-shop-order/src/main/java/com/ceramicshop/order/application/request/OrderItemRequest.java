@@ -32,11 +32,21 @@ public class OrderItemRequest {
     private String productImage;
     
     /**
-     * 商品单价
+     * 商品规格
+     */
+    private String productSpecs;
+    
+    /**
+     * 商品单价 (旧字段名，为向后兼容保留)
      */
     @NotNull(message = "商品单价不能为空")
     @Positive(message = "商品单价必须大于0")
     private BigDecimal unitPrice;
+    
+    /**
+     * 商品单价 (新字段名，与数据库一致)
+     */
+    private BigDecimal price;
     
     /**
      * 购买数量

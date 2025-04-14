@@ -9,8 +9,37 @@ const productApi = {
    * @returns {Promise<Array>} 产品列表
    */
   getProducts() {
-    return api.get(`/api/products`)
-      .then(response => response);
+    console.log('API: 请求获取所有产品');
+    
+    return new Promise((resolve, reject) => {
+      api.get('/api/products')
+        .then(response => {
+          console.log('API: 获取产品原始响应:', response);
+          
+          // 处理各种可能的响应格式
+          let products = [];
+          
+          if (Array.isArray(response)) {
+            products = response;
+          } else if (response && Array.isArray(response.data)) {
+            products = response.data;
+          } else if (response && response.data && Array.isArray(response.data.data)) {
+            products = response.data.data;
+          } else if (response && response.data && response.data.success && Array.isArray(response.data.data)) {
+            products = response.data.data;
+          } else {
+            console.warn('API: 未能识别产品数据格式:', response);
+            products = [];
+          }
+          
+          console.log('API: 解析后的产品数据:', products);
+          resolve(products);
+        })
+        .catch(error => {
+          console.error('API: 获取产品列表失败:', error);
+          reject(error);
+        });
+    });
   },
 
   /**
@@ -19,8 +48,40 @@ const productApi = {
    * @returns {Promise<Object>} 产品详情
    */
   getProductById(id) {
-    return api.get(`/api/products/${id}`)
-      .then(response => response);
+    console.log('API: 请求获取产品详情 ID:', id);
+    
+    return new Promise((resolve, reject) => {
+      api.get(`/api/products/${id}`)
+        .then(response => {
+          console.log('API: 获取产品详情原始响应:', response);
+          
+          // 处理各种可能的响应格式
+          let product = null;
+          
+          if (response && typeof response === 'object' && !Array.isArray(response)) {
+            if (response.id) {
+              product = response;
+            } else if (response.data && response.data.id) {
+              product = response.data;
+            } else if (response.data && response.data.data && response.data.data.id) {
+              product = response.data.data;
+            } else {
+              console.warn('API: 未能识别产品详情数据格式:', response);
+              product = null;
+            }
+          } else {
+            console.warn('API: 未能识别产品详情数据格式:', response);
+            product = null;
+          }
+          
+          console.log('API: 解析后的产品详情:', product);
+          resolve(product);
+        })
+        .catch(error => {
+          console.error('API: 获取产品详情失败:', error);
+          reject(error);
+        });
+    });
   },
 
   /**
@@ -29,7 +90,35 @@ const productApi = {
    * @returns {Promise<Array>} 产品列表
    */
   getProductsByCategory(category) {
-    return api.get(`/api/products/category/${category}`);
+    console.log('API: 请求获取分类产品 Category:', category);
+    
+    return new Promise((resolve, reject) => {
+      api.get(`/api/products/category/${category}`)
+        .then(response => {
+          console.log('API: 获取分类产品原始响应:', response);
+          
+          // 处理各种可能的响应格式
+          let products = [];
+          
+          if (Array.isArray(response)) {
+            products = response;
+          } else if (response && Array.isArray(response.data)) {
+            products = response.data;
+          } else if (response && response.data && Array.isArray(response.data.data)) {
+            products = response.data.data;
+          } else {
+            console.warn('API: 未能识别分类产品数据格式:', response);
+            products = [];
+          }
+          
+          console.log('API: 解析后的分类产品数据:', products);
+          resolve(products);
+        })
+        .catch(error => {
+          console.error('API: 获取分类产品列表失败:', error);
+          reject(error);
+        });
+    });
   },
 
   /**

@@ -89,10 +89,26 @@ export default {
     const fetchProducts = async () => {
       loading.value = true;
       try {
+        console.log('开始获取产品列表...');
         const response = await productApi.getProducts();
-        products.value = response;
+        console.log('ProductListView 获取到响应:', response);
+        
+        // 检查response的具体格式，适应不同的返回格式
+        if (Array.isArray(response)) {
+          products.value = response;
+        } else if (response && response.data && Array.isArray(response.data)) {
+          products.value = response.data;
+        } else if (response && response.success && Array.isArray(response.data)) {
+          products.value = response.data;
+        } else {
+          console.error('无法解析产品列表数据:', response);
+          products.value = [];
+        }
+        
+        console.log('处理后的产品列表数据:', products.value);
       } catch (error) {
         console.error('获取产品列表失败:', error);
+        products.value = [];
       } finally {
         loading.value = false;
       }
