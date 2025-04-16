@@ -1,12 +1,31 @@
 import { userApi, orderApi } from './index'
 
-// 用户地址相关API（保持原有的接口）
+// Helper function to get current user ID
+function getCurrentUserId() {
+  const userId = localStorage.getItem('userId') || '';
+  if (!userId) {
+    console.warn('警告: 未找到用户ID，地址API可能会失败');
+  }
+  return userId;
+}
+
+// 用户地址相关API
 /**
  * 获取用户的所有地址
  * @returns {Promise}
  */
 export function getUserAddresses() {
-  return userApi.get('/api/addresses');
+  const userId = getCurrentUserId();
+  
+  return userApi.get('/api/addresses', {
+    headers: {
+      'X-User-Id': userId
+    }
+  }).then(response => {
+    return response;
+  }).catch(error => {
+    throw error;
+  });
 }
 
 /**
@@ -14,7 +33,12 @@ export function getUserAddresses() {
  * @returns {Promise}
  */
 export function getDefaultAddress() {
-  return userApi.get('/api/addresses/default');
+  const userId = getCurrentUserId();
+  return userApi.get('/api/addresses/default', {
+    headers: {
+      'X-User-Id': userId
+    }
+  });
 }
 
 /**
@@ -23,7 +47,12 @@ export function getDefaultAddress() {
  * @returns {Promise}
  */
 export function getAddressById(addressId) {
-  return userApi.get(`/api/addresses/${addressId}`);
+  const userId = getCurrentUserId();
+  return userApi.get(`/api/addresses/${addressId}`, {
+    headers: {
+      'X-User-Id': userId
+    }
+  });
 }
 
 /**
@@ -32,7 +61,12 @@ export function getAddressById(addressId) {
  * @returns {Promise}
  */
 export function createAddress(addressData) {
-  return userApi.post('/api/addresses', addressData);
+  const userId = getCurrentUserId();
+  return userApi.post('/api/addresses', addressData, {
+    headers: {
+      'X-User-Id': userId
+    }
+  });
 }
 
 /**
@@ -42,7 +76,12 @@ export function createAddress(addressData) {
  * @returns {Promise}
  */
 export function updateAddress(addressId, addressData) {
-  return userApi.put(`/api/addresses/${addressId}`, addressData);
+  const userId = getCurrentUserId();
+  return userApi.put(`/api/addresses/${addressId}`, addressData, {
+    headers: {
+      'X-User-Id': userId
+    }
+  });
 }
 
 /**
@@ -51,7 +90,12 @@ export function updateAddress(addressId, addressData) {
  * @returns {Promise}
  */
 export function deleteAddress(addressId) {
-  return userApi.delete(`/api/addresses/${addressId}`);
+  const userId = getCurrentUserId();
+  return userApi.delete(`/api/addresses/${addressId}`, {
+    headers: {
+      'X-User-Id': userId
+    }
+  });
 }
 
 /**
@@ -60,10 +104,15 @@ export function deleteAddress(addressId) {
  * @returns {Promise}
  */
 export function setDefaultAddress(addressId) {
-  return userApi.post(`/api/addresses/${addressId}/default`);
+  const userId = getCurrentUserId();
+  return userApi.post(`/api/addresses/${addressId}/default`, null, {
+    headers: {
+      'X-User-Id': userId
+    }
+  });
 }
 
-// 物流地址相关API（新增）
+// 物流地址相关API
 /**
  * 获取订单的物流地址
  * @param {Number} orderId 订单ID

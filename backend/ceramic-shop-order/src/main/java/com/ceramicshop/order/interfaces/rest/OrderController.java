@@ -37,9 +37,6 @@ public class OrderController {
         System.out.println("-----创建订单请求-----");
         System.out.println("用户ID: " + userId);
         System.out.println("地址ID: " + request.getAddressId());
-        System.out.println("收货人: " + request.getReceiverName());
-        System.out.println("收货电话: " + request.getReceiverPhone());
-        System.out.println("收货地址: " + request.getReceiverAddress());
         System.out.println("订单项数量: " + (request.getItems() != null ? request.getItems().size() : "null"));
         
         // 请求验证
@@ -47,23 +44,12 @@ public class OrderController {
             throw new IllegalArgumentException("订单项不能为空");
         }
         
-        OrderDTO orderDTO;
-        
-        // 判断使用哪种方式创建订单
-        if (request.hasReceiverInfo()) {
-            // 方式2：直接使用收货人信息创建订单
-            AddressDTO addressDTO = new AddressDTO();
-            addressDTO.setReceiverName(request.getReceiverName());
-            addressDTO.setReceiverPhone(request.getReceiverPhone());
-            addressDTO.setReceiverAddress(request.getReceiverAddress());
-            
-            orderDTO = orderApplicationService.createOrder(userId, addressDTO, request.getItems());
-        } else if (request.getAddressId() != null) {
-            // 方式1：通过地址ID创建订单
-            orderDTO = orderApplicationService.createOrder(userId, request.getAddressId(), request.getItems());
-        } else {
-            throw new IllegalArgumentException("收货地址信息不完整，请提供地址ID或完整的收货人信息");
+        if (request.getAddressId() == null) {
+            throw new IllegalArgumentException("收货地址ID不能为空");
         }
+        
+        // 通过地址ID创建订单
+        OrderDTO orderDTO = orderApplicationService.createOrder(userId, request.getAddressId(), request.getItems());
         
         return ApiResponse.success(orderDTO);
     }

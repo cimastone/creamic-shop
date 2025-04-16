@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,62 +17,14 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateOrderRequest {
     
-    // 方式1：通过地址ID创建订单
+    /**
+     * 收货地址ID (必填)
+     */
+    @NotNull(message = "收货地址ID不能为空")
     private Long addressId;
     
-    // 方式2：直接提供收货人信息创建订单（备选方案）
-    private String receiverName;
-    private String receiverPhone;
-    private String receiverAddress;
-    
-    private List<OrderItemDTO> items = new ArrayList<>();
-    
-    public Long getAddressId() {
-        return addressId;
-    }
-    
-    public void setAddressId(Long addressId) {
-        this.addressId = addressId;
-    }
-    
-    public String getReceiverName() {
-        return receiverName;
-    }
-    
-    public void setReceiverName(String receiverName) {
-        this.receiverName = receiverName;
-    }
-    
-    public String getReceiverPhone() {
-        return receiverPhone;
-    }
-    
-    public void setReceiverPhone(String receiverPhone) {
-        this.receiverPhone = receiverPhone;
-    }
-    
-    public String getReceiverAddress() {
-        return receiverAddress;
-    }
-    
-    public void setReceiverAddress(String receiverAddress) {
-        this.receiverAddress = receiverAddress;
-    }
-    
-    public List<OrderItemDTO> getItems() {
-        return items;
-    }
-    
-    public void setItems(List<OrderItemDTO> items) {
-        this.items = items;
-    }
-    
     /**
-     * 判断是否直接提供了收货人信息
+     * 订单商品列表
      */
-    public boolean hasReceiverInfo() {
-        return receiverName != null && !receiverName.isEmpty() &&
-               receiverPhone != null && !receiverPhone.isEmpty() &&
-               receiverAddress != null && !receiverAddress.isEmpty();
-    }
+    private List<OrderItemDTO> items = new ArrayList<>();
 } 

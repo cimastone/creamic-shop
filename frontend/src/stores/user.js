@@ -26,6 +26,11 @@ export const useUserStore = defineStore('user', () => {
         // 设置用户信息（如果返回）
         if (response.data.user) {
           userInfo.value = response.data.user
+          // 保存用户ID到localStorage
+          if (response.data.user.id) {
+            localStorage.setItem('userId', response.data.user.id.toString())
+            console.log('已保存用户ID到localStorage:', response.data.user.id)
+          }
         } else {
           // 获取用户信息
           await fetchUserInfo()
@@ -45,14 +50,16 @@ export const useUserStore = defineStore('user', () => {
     try {
       await apiLogout()
     } catch (error) {
-      console.error('登出失败:', error)
+      // 这里不需要处理登出失败，因为可能只是因为已经登出导致的401错误
+      console.log('登出请求完成:', error ? '有错误' : '成功');
     } finally {
-      // 清除本地存储
+      // 无论登出API调用成功与否，都要清除本地存储
       token.value = ''
       refreshToken.value = ''
       userInfo.value = null
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
+      localStorage.removeItem('userId')
     }
   }
 
@@ -60,9 +67,22 @@ export const useUserStore = defineStore('user', () => {
   async function fetchUserInfo() {
     try {
       const response = await userApi.get('/api/users/current')
+      console.log('获取用户信息响应:', response);
+      
       if (response.data) {
         userInfo.value = response.data
+        // 保存用户ID到localStorage，供API请求使用
+        if (response.data.id) {
+          localStorage.setItem('userId', response.data.id.toString())
+          console.log('已保存用户ID到localStorage:', response.data.id)
+        } else {
+          console.warn('警告: 用户信息中没有找到ID字段')
+          // 查看响应数据结构
+          console.log('用户信息数据结构:', JSON.stringify(response.data).substring(0, 200))
+        }
+        return response.data
       } else {
+        console.error('获取用户信息失败: 响应中没有data字段')
         throw new Error('获取用户信息失败')
       }
     } catch (error) {

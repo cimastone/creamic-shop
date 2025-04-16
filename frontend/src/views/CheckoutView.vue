@@ -5,38 +5,7 @@
     <div class="checkout-content" v-if="cart.items.length > 0">
       <div class="address-section">
         <h2>收货地址</h2>
-        <div v-if="useAddressSelector">
-          <AddressSelector v-model="selectedAddressId" />
-        </div>
-        <div v-else class="address-form">
-          <div class="form-group">
-            <label>收货人</label>
-            <input 
-              type="text" 
-              v-model="manualAddress.receiverName" 
-              placeholder="请输入收货人姓名"
-            />
-          </div>
-          <div class="form-group">
-            <label>联系电话</label>
-            <input 
-              type="text" 
-              v-model="manualAddress.receiverPhone" 
-              placeholder="请输入联系电话"
-            />
-          </div>
-          <div class="form-group full-width">
-            <label>详细地址</label>
-            <input 
-              type="text" 
-              v-model="manualAddress.receiverAddress" 
-              placeholder="请输入详细地址"
-            />
-          </div>
-          <div class="form-actions">
-            <button @click="toggleAddressMode" class="toggle-btn">切换到地址选择</button>
-          </div>
-        </div>
+        <AddressSelector v-model="selectedAddressId" />
       </div>
       
       <div class="products-section">
@@ -124,31 +93,16 @@ import { useUserStore } from '@/stores/user'
 import { createOrder } from '@/api/order'
 import AddressSelector from '@/components/AddressSelector.vue'
 
-// 是否使用地址选择器组件
-const useAddressSelector = ref(true) // 默认使用地址选择器
-
 const router = useRouter()
 const cart = useCartStore()
 const userStore = useUserStore()
 const isSubmitting = ref(false)
 const selectedAddressId = ref(null)
 
-// 手动输入地址（备选方案）
-const manualAddress = ref({
-  receiverName: '',
-  receiverPhone: '',
-  receiverAddress: ''
-})
-
 const orderInfo = ref({
   paymentMethod: 'ALIPAY',
   note: ''
 })
-
-// 切换地址模式
-const toggleAddressMode = () => {
-  useAddressSelector.value = !useAddressSelector.value
-}
 
 // 获取商品总价
 const totalAmount = computed(() => {
@@ -162,15 +116,7 @@ const shippingFee = computed(() => {
 
 // 表单验证
 const isFormValid = computed(() => {
-  if (useAddressSelector.value) {
-    return selectedAddressId.value !== null;
-  } else {
-    return (
-      manualAddress.value.receiverName.trim() !== '' &&
-      manualAddress.value.receiverPhone.trim() !== '' &&
-      manualAddress.value.receiverAddress.trim() !== ''
-    );
-  }
+  return selectedAddressId.value !== null;
 })
 
 // 返回购物车
@@ -185,51 +131,33 @@ const goToShop = () => {
 
 // 提交订单
 const submitOrder = async () => {
+  // 检查登录状态
   if (!userStore.isLoggedIn) {
     router.push('/login?redirect=/checkout')
     return
   }
 
-  if (!isFormValid.value) {
-    alert(useAddressSelector.value ? '请选择收货地址' : '请填写完整的收货信息');
+  // 检查是否选择了地址
+  if (!selectedAddressId.value) {
+    alert('请选择收货地址');
     return
   }
 
   isSubmitting.value = true
   
   try {
-    let orderData;
-    
-    // 判断使用哪种方式创建订单
-    if (useAddressSelector.value) {
-      // 方式1：使用地址选择器，通过地址ID创建订单
-      orderData = {
-        addressId: selectedAddressId.value,
-        items: cart.items.map(item => ({
-          productId: item.id,
-          productName: item.name,
-          productImage: item.image,
-          productSpecs: item.specs || '默认规格',
-          unitPrice: item.price,
-          quantity: item.quantity
-        }))
-      };
-    } else {
-      // 方式2：直接使用手动输入的地址信息创建订单
-      orderData = {
-        receiverName: manualAddress.value.receiverName,
-        receiverPhone: manualAddress.value.receiverPhone,
-        receiverAddress: manualAddress.value.receiverAddress,
-        items: cart.items.map(item => ({
-          productId: item.id,
-          productName: item.name,
-          productImage: item.image,
-          productSpecs: item.specs || '默认规格',
-          unitPrice: item.price,
-          quantity: item.quantity
-        }))
-      };
-    }
+    // 准备订单数据（只使用地址ID模式）
+    const orderData = {
+      addressId: selectedAddressId.value,
+      items: cart.items.map(item => ({
+        productId: item.id,
+        productName: item.name,
+        productImage: item.image,
+        productSpecs: item.specs || '默认规格',
+        unitPrice: item.price,
+        quantity: item.quantity
+      }))
+    };
     
     console.log('提交订单数据:', JSON.stringify(orderData));
     
@@ -243,12 +171,7 @@ const submitOrder = async () => {
       
       // 获取订单ID
       const orderData = response.data;
-      let orderId;
-      
-      if (orderData && orderData.id) {
-        // 直接从响应中获取ID
-        orderId = orderData.id;
-      }
+      let orderId = orderData?.id;
       
       if (orderId) {
         // 跳转到订单详情页
@@ -265,14 +188,6 @@ const submitOrder = async () => {
   } catch (error) {
     console.error('提交订单失败:', error);
     
-    // 检查是否成功但被错误处理
-    if (error.success === true) {
-      cart.clearCart();
-      alert('订单创建成功！');
-      router.push('/orders');
-      return;
-    }
-    
     // 显示错误信息
     alert(error.message || '订单创建失败，请稍后重试');
   } finally {
@@ -285,34 +200,6 @@ onMounted(() => {
   if (cart.items.length === 0) {
     router.push('/cart')
     return
-  }
-  
-  // 如果用户已登录，自动填充用户信息
-  if (!useAddressSelector.value && userStore.isLoggedIn && userStore.userInfo) {
-    manualAddress.value.receiverName = userStore.userInfo.name || ''
-    manualAddress.value.receiverPhone = userStore.userInfo.phone || ''
-    manualAddress.value.receiverAddress = userStore.userInfo.address || ''
-  }
-
-  // 检查是否有保存的结账状态
-  const savedState = localStorage.getItem('checkoutState');
-  if (savedState) {
-    try {
-      const state = JSON.parse(savedState);
-      // 恢复地址信息
-      if (state.manualAddress) {
-        manualAddress.value = state.manualAddress;
-      }
-      // 恢复订单信息
-      if (state.orderInfo) {
-        orderInfo.value = state.orderInfo;
-      }
-      // 清除保存的状态
-      localStorage.removeItem('checkoutState');
-    } catch (error) {
-      console.error('恢复结账状态失败:', error);
-      localStorage.removeItem('checkoutState');
-    }
   }
 })
 </script>
@@ -346,45 +233,6 @@ h2 {
 .address-section, .products-section, .payment-section {
   padding: 20px;
   border-bottom: 1px solid #f0f0f0;
-}
-
-/* 地址表单样式 */
-.address-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.form-group {
-  width: calc(50% - 8px);
-}
-
-.form-group.full-width {
-  width: 100%;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #666;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.toggle-btn {
-  margin-top: 16px;
-  padding: 8px 16px;
-  background-color: #f0f0f0;
-  color: #333;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
 .product-list {

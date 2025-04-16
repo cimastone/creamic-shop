@@ -80,6 +80,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue';
 import { getUserAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '@/api/address';
+import { useUserStore } from '@/stores/user';
 
 const props = defineProps({
   modelValue: {
@@ -132,15 +133,119 @@ onMounted(async () => {
 // 加载地址列表
 async function loadAddresses() {
   try {
-    const response = await getUserAddresses();
-    // 适配新的响应格式
-    if (response.data) {
-      addresses.value = response.data || [];
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      console.error('获取地址列表失败: 未找到用户ID，请先登录');
+      
+      // 检查当前页面是否已经有登录提示
+      if (window.location.pathname.includes('/checkout')) {
+        console.log('在结账页面，不主动显示登录提示');
+        addresses.value = [];
+        return;
+      }
+      
+      // 这里可以尝试重新获取用户信息
+      try {
+        const userStore = useUserStore();
+        if (userStore.isLoggedIn) {
+          console.log('尝试重新获取用户信息...');
+          await userStore.fetchUserInfo();
+          console.log('用户信息已更新，重新尝试加载地址');
+          // 重新检查用户ID
+          const newUserId = localStorage.getItem('userId');
+          if (!newUserId) {
+            throw new Error('仍然无法获取用户ID');
+          }
+          console.log('已获取用户ID:', newUserId);
+        } else {
+          throw new Error('用户未登录');
+        }
+      } catch (userError) {
+        console.error('重新获取用户信息失败:', userError);
+        // 只有在非结账页面才显示提示
+        if (!window.location.pathname.includes('/checkout')) {
+          alert('您需要登录后才能查看收货地址');
+        }
+        addresses.value = [];
+        return;
+      }
+    }
+
+    console.log('正在获取用户地址，用户ID:', userId);
+    
+    // 设置超时处理
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('获取地址列表超时，请检查网络连接')), 10000)
+    );
+    
+    // 带超时的地址获取
+    const addressPromise = getUserAddresses();
+    const response = await Promise.race([addressPromise, timeoutPromise]);
+    
+    console.log('地址选择器获取到的地址列表:', response);
+    
+    // 处理响应格式
+    if (response && response.success && Array.isArray(response.data)) {
+      addresses.value = response.data;
+    } else if (response && Array.isArray(response.data)) {
+      addresses.value = response.data;
+    } else if (Array.isArray(response)) {
+      addresses.value = response;
     } else {
-      addresses.value = response || [];
+      console.warn('无法解析地址数据格式:', response);
+      addresses.value = [];
+    }
+    
+    // 如果没有地址，可以尝试加载默认地址
+    if (addresses.value.length === 0) {
+      console.log('未找到地址列表，尝试获取默认地址...');
+      try {
+        const defaultAddressResponse = await getDefaultAddress();
+        if (defaultAddressResponse && defaultAddressResponse.data) {
+          const defaultAddress = defaultAddressResponse.data;
+          addresses.value = [defaultAddress];
+          console.log('已加载默认地址:', defaultAddress);
+        }
+      } catch (defaultAddressError) {
+        console.error('获取默认地址失败:', defaultAddressError);
+      }
     }
   } catch (error) {
     console.error('获取地址列表出错:', error);
+    addresses.value = [];
+    
+    // 检查是否是已被API拦截器处理过的错误
+    if (error && error.handled) {
+      console.log('错误已由API拦截器处理，不再显示提示');
+      return;
+    }
+    
+    // 检查是否是未授权错误（401）
+    if (error && error.status === 401) {
+      // 在结账页面不显示提示，由父组件处理
+      if (window.location.pathname.includes('/checkout')) {
+        console.log('在结账页面检测到401错误，跳过提示');
+        return;
+      }
+      
+      // 其他页面提示用户登录
+      alert('您的登录已过期，请重新登录');
+    } else if (error && error.message) {
+      // 显示其他错误信息，但在结账页面不显示
+      if (!window.location.pathname.includes('/checkout')) {
+        let errorMessage = `获取地址列表失败: ${error.message}`;
+        
+        // 添加更多调试信息
+        const userId = localStorage.getItem('userId');
+        if (userId) {
+          errorMessage += `\n当前用户ID: ${userId}`;
+        } else {
+          errorMessage += `\n未找到用户ID，请确保您已登录`;
+        }
+        
+        alert(errorMessage);
+      }
+    }
   }
 }
 
@@ -185,27 +290,25 @@ function deleteAddressConfirm(addressId) {
 async function deleteAddressById(addressId) {
   try {
     const response = await deleteAddress(addressId);
-    // 适配新的响应格式
-    if ((response.data && response.data.code === 0) || response.code === 0) {
-      await loadAddresses();
-      
-      // 如果删除的是当前选中的地址，重新选择一个地址
-      if (selectedAddressId.value === addressId) {
-        if (addresses.value.length > 0) {
-          const defaultAddress = addresses.value.find(addr => addr.isDefault);
-          selectedAddressId.value = defaultAddress ? defaultAddress.id : addresses.value[0].id;
-          emit('update:modelValue', selectedAddressId.value);
-        } else {
-          selectedAddressId.value = null;
-          emit('update:modelValue', null);
-        }
+    console.log('删除地址响应:', response);
+    
+    // 重新加载地址列表
+    await loadAddresses();
+    
+    // 如果删除的是当前选中的地址，重新选择一个地址
+    if (selectedAddressId.value === addressId) {
+      if (addresses.value.length > 0) {
+        const defaultAddress = addresses.value.find(addr => addr.isDefault);
+        selectedAddressId.value = defaultAddress ? defaultAddress.id : addresses.value[0].id;
+        emit('update:modelValue', selectedAddressId.value);
+      } else {
+        selectedAddressId.value = null;
+        emit('update:modelValue', null);
       }
-    } else {
-      alert('删除地址失败');
     }
   } catch (error) {
     console.error('删除地址出错:', error);
-    alert('删除地址出错');
+    alert('删除地址失败，请稍后重试');
   }
 }
 
@@ -243,33 +346,27 @@ async function saveAddress() {
       response = await createAddress(addressForm);
     }
     
-    // 适配新的响应格式
-    if ((response.data && response.data.code === 0) || response.code === 0) {
-      await loadAddresses();
-      
-      // 如果设为默认地址或是首个地址，自动选中它
-      let savedAddress;
-      if (response.data && response.data.data) {
-        savedAddress = response.data.data;
-      } else if (response.data) {
-        savedAddress = response.data;
-      } else {
-        savedAddress = addresses.value.find(a => a.isDefault) || addresses.value[0];
+    console.log('保存地址响应:', response);
+    
+    // 重新加载地址列表
+    await loadAddresses();
+    
+    // 重置表单和关闭弹窗
+    showAddressForm.value = false;
+    resetForm();
+    
+    // 如果是新创建的地址且设为默认，或者地址列表只有一项，自动选中它
+    if (!isEditing.value && (addressForm.isDefault || addresses.value.length === 1)) {
+      // 查找新添加的地址（通常是列表中的最后一个）
+      const newAddress = addresses.value[addresses.value.length - 1];
+      if (newAddress) {
+        selectedAddressId.value = newAddress.id;
+        emit('update:modelValue', newAddress.id);
       }
-      
-      if (savedAddress && (addressForm.isDefault || addresses.value.length === 1)) {
-        selectedAddressId.value = savedAddress.id;
-        emit('update:modelValue', savedAddress.id);
-      }
-      
-      showAddressForm.value = false;
-      resetForm();
-    } else {
-      alert(isEditing.value ? '更新地址失败' : '添加地址失败');
     }
   } catch (error) {
-    console.error(isEditing.value ? '更新地址出错:' : '添加地址出错:', error);
-    alert(isEditing.value ? '更新地址出错' : '添加地址出错');
+    console.error('保存地址失败:', error);
+    alert(isEditing.value ? '更新地址失败，请稍后重试' : '添加地址失败，请稍后重试');
   }
 }
 </script>
@@ -283,67 +380,87 @@ async function saveAddress() {
 .address-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .address-item {
   display: flex;
   justify-content: space-between;
   padding: 15px;
-  border: 1px solid #ddd;
+  border: 1px solid #e8e8e8;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.3s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+  background-color: #fff;
 }
 
 .address-item:hover {
   border-color: #40a9ff;
+  box-shadow: 0 4px 10px rgba(24, 144, 255, 0.1);
+  transform: translateY(-2px);
 }
 
 .address-item.active {
   border-color: #1890ff;
   background-color: #e6f7ff;
+  box-shadow: 0 4px 10px rgba(24, 144, 255, 0.15);
+}
+
+.address-info {
+  flex: 1;
 }
 
 .recipient-info {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .name {
   font-weight: bold;
-  margin-right: 10px;
+  margin-right: 12px;
+  font-size: 15px;
 }
 
 .phone {
   color: #666;
+  font-size: 14px;
 }
 
 .default-tag {
   background-color: #ff4d4f;
   color: white;
   font-size: 12px;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 10px;
   margin-left: 10px;
+  display: inline-block;
 }
 
 .address-detail {
-  color: #333;
+  color: #555;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .address-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: flex-start;
 }
 
 .edit-btn, .delete-btn {
-  padding: 5px 10px;
-  font-size: 12px;
+  padding: 5px 12px;
+  font-size: 13px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .edit-btn {
@@ -351,31 +468,52 @@ async function saveAddress() {
   color: #333;
 }
 
+.edit-btn:hover {
+  background-color: #e0e0e0;
+}
+
 .delete-btn {
   background-color: #fff1f0;
   color: #ff4d4f;
 }
 
+.delete-btn:hover {
+  background-color: #ffccc7;
+}
+
 .address-actions-bar {
-  margin-top: 15px;
-  text-align: center;
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .add-address-btn {
-  padding: 8px 16px;
-  background-color: #1890ff;
+  padding: 10px 20px;
+  background: linear-gradient(to right, #1890ff, #40a9ff);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2);
+  transition: all 0.3s;
+}
+
+.add-address-btn:hover {
+  background: linear-gradient(to right, #0c80f0, #1890ff);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  transform: translateY(-2px);
 }
 
 .empty-address {
-  padding: 30px;
+  padding: 40px 20px;
   text-align: center;
   color: #999;
   border: 1px dashed #ddd;
   border-radius: 8px;
+  background-color: #fafafa;
+  margin-bottom: 20px;
 }
 
 .address-form-modal {
@@ -384,21 +522,42 @@ async function saveAddress() {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .modal-content {
   background-color: white;
-  padding: 20px;
+  padding: 25px;
   border-radius: 8px;
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 18px;
+  color: #333;
+  text-align: center;
 }
 
 .form-group {
@@ -407,16 +566,27 @@ async function saveAddress() {
 
 .form-group label {
   display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #444;
+  font-size: 14px;
 }
 
 .form-group input,
 .form-group textarea {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
   border-radius: 4px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
 }
 
 .form-group textarea {
@@ -431,22 +601,29 @@ async function saveAddress() {
 
 .form-group.checkbox input {
   width: auto;
-  margin-right: 8px;
+  margin-right: 10px;
+}
+
+.form-group.checkbox label {
+  margin-bottom: 0;
+  cursor: pointer;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 25px;
 }
 
 .cancel-btn,
 .save-btn {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
 }
 
 .cancel-btn {
@@ -454,8 +631,18 @@ async function saveAddress() {
   color: #333;
 }
 
+.cancel-btn:hover {
+  background-color: #e0e0e0;
+}
+
 .save-btn {
-  background-color: #1890ff;
+  background: linear-gradient(to right, #1890ff, #40a9ff);
   color: white;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2);
+}
+
+.save-btn:hover {
+  background: linear-gradient(to right, #0c80f0, #1890ff);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 </style> 

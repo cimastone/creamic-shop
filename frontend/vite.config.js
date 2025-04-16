@@ -52,6 +52,58 @@ export default defineConfig({
           });
         }
       },
+      '/api/addresses': {
+        target: 'http://localhost:8082',
+        changeOrigin: true,
+        rewrite: (path) => {
+          // 构建新路径
+          const basePath = path.replace('/api/addresses', '/user/api/users');
+          
+          // 处理不同类型的地址请求
+          if (path.match(/\/api\/addresses\/\d+/)) {
+            // 处理形如 /api/addresses/123 的路径
+            const newPath = path.replace(/\/api\/addresses\/(\d+)(.*)/, `/user/api/users/{userId}/addresses/$1$2`);
+            console.log(`Proxy [addresses]: ${path} -> ${newPath}`);
+            return newPath;
+          } else if (path === '/api/addresses') {
+            // 处理基本路径 /api/addresses
+            const newPath = `/user/api/users/{userId}/addresses`;
+            console.log(`Proxy [addresses]: ${path} -> ${newPath}`);
+            return newPath;
+          } else if (path.includes('/api/addresses/default')) {
+            // 处理默认地址请求
+            const newPath = `/user/api/users/{userId}/addresses/default`;
+            console.log(`Proxy [addresses]: ${path} -> ${newPath}`);
+            return newPath;
+          } else {
+            // 处理其他与地址相关的路径
+            const newPath = path.replace('/api/addresses', `/user/api/users/{userId}/addresses`);
+            console.log(`Proxy [addresses]: ${path} -> ${newPath}`);
+            return newPath;
+          }
+        },
+        configure: (proxy, options) => {
+          proxy.on('error', (err, req, res) => {
+            console.log('地址代理错误:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('地址代理请求:', req.method, req.url);
+            
+            // 从请求头中提取用户ID
+            const userId = req.headers['x-user-id'] || '1';
+            
+            // 更新URL中的用户ID占位符
+            if (proxyReq.path.includes('{userId}')) {
+              const newPath = proxyReq.path.replace('{userId}', userId);
+              proxyReq.path = newPath;
+              console.log(`更新地址代理URL，用户ID: ${userId}, 新路径: ${proxyReq.path}`);
+            }
+          });
+          proxy.on('proxyRes', (proxyRes, req, res) => {
+            console.log('地址代理响应:', proxyRes.statusCode, req.url);
+          });
+        }
+      },
       '/api/orders': {
         target: 'http://localhost:8003',
         changeOrigin: true,

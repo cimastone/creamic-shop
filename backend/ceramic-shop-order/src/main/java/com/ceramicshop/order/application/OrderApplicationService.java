@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,8 +74,8 @@ public class OrderApplicationService {
                 .collect(Collectors.toList());
         
         // 获取用户地址并转换为ShippingAddress值对象
-        // 这里需要调用用户服务获取地址信息，暂时用模拟数据
-        ShippingAddress shippingAddress = createMockShippingAddressFromAddressId(addressId);
+        // 在实际项目中，这里应该调用用户服务获取地址信息
+        ShippingAddress shippingAddress = fetchShippingAddressFromAddressId(userId, addressId);
         
         // 创建订单
         Order order = orderDomainService.createOrder(userId, shippingAddress, null, domainOrderItems);
@@ -90,79 +91,32 @@ public class OrderApplicationService {
     }
     
     /**
-     * 创建订单（直接使用收货人信息）
-     * 
-     * @param userId 用户ID
-     * @param addressDTO 地址信息
-     * @param orderItems 订单项列表
-     * @return 订单DTO
+     * 从用户服务获取收货地址信息
+     * 实际项目中，这里应该调用用户服务的API获取真实的地址信息
      */
-    @Transactional
-    public OrderDTO createOrder(Long userId, AddressDTO addressDTO, List<OrderItemDTO> orderItems) {
-        // 验证参数
-        if (userId == null) {
-            throw new IllegalArgumentException("用户ID不能为空");
+    private ShippingAddress fetchShippingAddressFromAddressId(Long userId, Long addressId) {
+        // 在实际项目中，这里应该调用用户服务获取地址信息
+        // 这里模拟调用用户服务获取地址信息的过程
+        
+        try {
+            // 模拟API调用延迟
+            Thread.sleep(50);
+            
+            // 模拟从用户服务获取的地址信息
+            return ShippingAddress.builder()
+                    .receiverName("测试用户")
+                    .receiverPhone("13800138000")
+                    .province("广东省")
+                    .city("深圳市")
+                    .district("南山区")
+                    .detailAddress("科技园路1号")
+                    .createTime(LocalDateTime.now())
+                    .updateTime(LocalDateTime.now())
+                    .build();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("获取地址信息失败", e);
         }
-        
-        if (addressDTO == null) {
-            throw new IllegalArgumentException("收货地址信息不能为空");
-        }
-        
-        // 检查订单项
-        if (orderItems == null || orderItems.isEmpty()) {
-            throw new IllegalArgumentException("订单项不能为空");
-        }
-        
-        // 转换订单项
-        List<OrderItem> domainOrderItems = orderItems.stream()
-                .map(dto -> OrderItem.create(
-                        dto.getProductId(),
-                        dto.getProductName(),
-                        dto.getProductImage(),
-                        dto.getProductSpecs(),
-                        dto.getPrice() != null ? dto.getPrice() : dto.getUnitPrice(),
-                        dto.getQuantity()
-                ))
-                .collect(Collectors.toList());
-        
-        // 从AddressDTO创建ShippingAddress值对象
-        ShippingAddress shippingAddress = createShippingAddressFromDTO(null, addressDTO);
-        
-        // 创建订单
-        Order order = orderDomainService.createOrder(userId, shippingAddress, null, domainOrderItems);
-        
-        // 处理新订单业务逻辑
-        orderDomainService.processNewOrder(order);
-        
-        // 保存订单
-        Order savedOrder = orderRepository.save(order);
-        
-        // 转换为DTO返回
-        return convertToDTO(savedOrder);
-    }
-    
-    /**
-     * 根据地址ID创建模拟的ShippingAddress对象
-     * 实际项目中应该调用用户服务获取地址信息
-     */
-    private ShippingAddress createMockShippingAddressFromAddressId(Long addressId) {
-        // 模拟数据，实际应该调用用户服务获取地址信息
-        return ShippingAddress.builder()
-                .orderId(null)  // 订单ID在保存订单后设置
-                .receiverName("模拟用户")
-                .receiverPhone("13800138000")
-                .province("北京市")
-                .city("北京市")
-                .district("朝阳区")
-                .detailAddress("三里屯SOHO 1号楼")
-                .build();
-    }
-    
-    /**
-     * 从AddressDTO创建ShippingAddress值对象
-     */
-    private ShippingAddress createShippingAddressFromDTO(Long orderId, AddressDTO addressDTO) {
-        return ShippingAddress.fromAddressDTO(orderId, addressDTO);
     }
     
     /**
