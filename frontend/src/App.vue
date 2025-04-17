@@ -43,7 +43,7 @@ const getUserInitial = () => {
           </RouterLink>
           <RouterLink v-if="userStore.isLoggedIn" to="/cart" class="nav-link" active-class="active">
             <div class="cart-icon-wrapper">
-              <i class="nav-icon">🛒</i>
+              <i class="nav-icon cart-icon">🛒</i>
               <span v-if="cartStore.itemCount > 0" class="cart-count">{{ cartStore.itemCount }}</span>
             </div>
             <span>购物车</span>
@@ -216,6 +216,24 @@ body {
   font-size: 12px;
   font-weight: bold;
   padding: 0 4px;
+  transition: transform 0.3s ease;
+}
+
+/* 购物车加入动画 */
+@keyframes cartBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.cart-bounce {
+  animation: cartBounce 0.8s ease;
 }
 
 .navbar-auth {

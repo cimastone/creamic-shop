@@ -232,8 +232,109 @@ const increaseQuantity = () => {
       // 用户已登录，继续添加到购物车
       if (product.value && product.value.stock > 0) {
         try {
-          cartStore.addToCart(product.value, quantity.value);
-          alert(`已将 ${quantity.value} 件 ${product.value.name} 加入购物车`);
+          // 创建飞入购物车的动画元素
+          const productRect = document.querySelector('.product-image').getBoundingClientRect();
+          const cartIcon = document.querySelector('.cart-icon') || { getBoundingClientRect: () => ({ top: 20, right: 20 }) };
+          const cartRect = cartIcon.getBoundingClientRect();
+          
+          // 创建飞行元素
+          const flyingImage = document.createElement('div');
+          flyingImage.className = 'flying-image';
+          flyingImage.style.cssText = `
+            position: fixed;
+            z-index: 9999;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            background-image: url(${product.value.image || getDefaultProductImage(product.value)});
+            background-size: cover;
+            background-position: center;
+            top: ${productRect.top + window.scrollY + productRect.height / 2 - 35}px;
+            left: ${productRect.left + productRect.width / 2 - 35}px;
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.8s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+          `;
+          
+          document.body.appendChild(flyingImage);
+          
+          // 触发动画
+          setTimeout(() => {
+            flyingImage.style.top = `${cartRect.top + window.scrollY + 5}px`;
+            flyingImage.style.left = `${cartRect.left + 5}px`;
+            flyingImage.style.opacity = '0.5';
+            flyingImage.style.transform = 'scale(0.2)';
+            
+            // 动画结束后移除元素
+            setTimeout(() => {
+              if (document.body.contains(flyingImage)) {
+                document.body.removeChild(flyingImage);
+              }
+              
+              // 添加到购物车并显示提示
+              cartStore.addToCart(product.value, quantity.value);
+              
+              // 让购物车图标闪烁
+              const cartIcon = document.querySelector('.cart-icon');
+              if (cartIcon) {
+                cartIcon.classList.add('cart-pulse');
+                // 动画结束后移除闪烁效果
+                setTimeout(() => {
+                  cartIcon.classList.remove('cart-pulse');
+                }, 1000);
+              }
+              
+              // 让购物车数量弹跳
+              const cartCount = document.querySelector('.cart-count');
+              if (cartCount) {
+                cartCount.classList.add('cart-bounce');
+                setTimeout(() => {
+                  cartCount.classList.remove('cart-bounce');
+                }, 1000);
+              }
+              
+              // 显示自定义的成功提示
+              const toast = document.createElement('div');
+              toast.className = 'cart-toast';
+              toast.innerHTML = `
+                <div class="cart-toast-content">
+                  <div class="cart-toast-icon">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                  </div>
+                  <div class="cart-toast-message">
+                    已将 ${quantity.value} 件 ${product.value.name} 加入购物车
+                  </div>
+                </div>
+                <div class="cart-toast-buttons">
+                  <button class="cart-toast-btn continue">继续购物</button>
+                  <button class="cart-toast-btn checkout" onclick="window.location.href='/cart'">查看购物车</button>
+                </div>
+              `;
+              
+              document.body.appendChild(toast);
+              
+              // 添加点击事件处理器
+              const continueBtn = toast.querySelector('.continue');
+              if (continueBtn) {
+                continueBtn.addEventListener('click', () => {
+                  document.body.removeChild(toast);
+                });
+              }
+              
+              // 3秒后自动关闭
+              setTimeout(() => {
+                if (document.body.contains(toast)) {
+                  document.body.removeChild(toast);
+                }
+              }, 3000);
+            }, 800);
+          }, 50);
+          
         } catch (error) {
           console.error('添加到购物车失败:', error);
           alert('添加到购物车失败，请重试');
@@ -541,5 +642,120 @@ const increaseQuantity = () => {
   .product-image {
     margin-bottom: 20px;
   }
+}
+
+/* 飞入购物车动画样式 */
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
+  70% { box-shadow: 0 0 0 15px rgba(76, 175, 80, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+}
+
+.flying-image {
+  animation: pulse 1s infinite;
+}
+
+/* 购物车图标闪烁动画 */
+@keyframes cartPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+:global(.cart-pulse) {
+  animation: cartPulse 0.5s ease-in-out;
+  color: #4CAF50;
+}
+
+/* 购物车提示样式 */
+.cart-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: white;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  max-width: 400px;
+  opacity: 0;
+  transform: translateY(-20px);
+  animation: cartToastFadeIn 0.4s forwards;
+  border-top: 4px solid transparent;
+  background-image: linear-gradient(white, white), 
+                    linear-gradient(to right, #4CAF50, #8BC34A);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+@keyframes cartToastFadeIn {
+  0% { opacity: 0; transform: translateY(-20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.cart-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.cart-toast-icon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  background-color: rgba(76, 175, 80, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4CAF50;
+}
+
+.cart-toast-message {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
+}
+
+.cart-toast-buttons {
+  display: flex;
+  gap: 12px;
+  align-self: flex-end;
+}
+
+.cart-toast-btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.cart-toast-btn.continue {
+  background-color: #f5f5f5;
+  color: #555;
+}
+
+.cart-toast-btn.continue:hover {
+  background-color: #e8e8e8;
+}
+
+.cart-toast-btn.checkout {
+  background-color: #4CAF50;
+  color: white;
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.2);
+}
+
+.cart-toast-btn.checkout:hover {
+  background-color: #43A047;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  transform: translateY(-2px);
 }
 </style> 

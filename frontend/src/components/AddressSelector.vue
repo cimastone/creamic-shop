@@ -26,51 +26,98 @@
     </div>
     
     <div class="empty-address" v-else>
-      <p>您还没有收货地址，请添加</p>
+      <div class="empty-icon">📍</div>
+      <p class="empty-text">您还没有收货地址</p>
+      <p class="empty-subtext">添加地址以便我们为您配送商品</p>
     </div>
     
     <div class="address-actions-bar">
-      <button class="add-address-btn" @click="showAddressForm = true">添加新地址</button>
+      <button class="add-address-btn" @click="showAddressForm = true">
+        <span class="btn-icon">+</span>
+        <span class="btn-text">添加新地址</span>
+      </button>
     </div>
     
     <!-- 添加/编辑地址表单 -->
     <div class="address-form-modal" v-if="showAddressForm">
+      <div class="modal-overlay" @click="cancelForm"></div>
       <div class="modal-content">
-        <h3>{{ isEditing ? '编辑地址' : '添加新地址' }}</h3>
-        <div class="form-group">
-          <label>收货人</label>
-          <input type="text" v-model="addressForm.receiverName" placeholder="请输入收货人姓名" />
+        <div class="modal-header">
+          <h3 class="modal-title">{{ isEditing ? '编辑收货地址' : '新增收货地址' }}</h3>
+          <button class="modal-close" @click="cancelForm">×</button>
         </div>
-        <div class="form-group">
-          <label>手机号码</label>
-          <input type="tel" v-model="addressForm.receiverPhone" placeholder="请输入手机号码" />
-        </div>
-        <div class="form-group">
-          <label>省份</label>
-          <input type="text" v-model="addressForm.province" placeholder="请输入省份" />
-        </div>
-        <div class="form-group">
-          <label>城市</label>
-          <input type="text" v-model="addressForm.city" placeholder="请输入城市" />
-        </div>
-        <div class="form-group">
-          <label>区/县</label>
-          <input type="text" v-model="addressForm.district" placeholder="请输入区/县" />
-        </div>
-        <div class="form-group">
-          <label>详细地址</label>
-          <textarea 
-            v-model="addressForm.detailAddress" 
-            placeholder="请输入详细地址，如街道、门牌号等"
-          ></textarea>
-        </div>
-        <div class="form-group checkbox">
-          <input type="checkbox" id="defaultAddress" v-model="addressForm.isDefault" />
-          <label for="defaultAddress">设为默认地址</label>
-        </div>
-        <div class="form-actions">
-          <button class="cancel-btn" @click="cancelForm">取消</button>
-          <button class="save-btn" @click="saveAddress">保存</button>
+        <div class="modal-body">
+          <div class="address-form">
+            <div class="form-group">
+              <label class="form-label">收货人</label>
+              <input 
+                type="text" 
+                class="form-input" 
+                v-model="addressForm.receiverName" 
+                placeholder="请输入收货人姓名" 
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label">手机号码</label>
+              <input 
+                type="tel" 
+                class="form-input" 
+                v-model="addressForm.receiverPhone" 
+                placeholder="请输入手机号码" 
+              />
+            </div>
+            <div class="region-selectors">
+              <div class="form-group">
+                <label class="form-label">省份</label>
+                <input 
+                  type="text" 
+                  class="form-input" 
+                  v-model="addressForm.province" 
+                  placeholder="请输入省份" 
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">城市</label>
+                <input 
+                  type="text" 
+                  class="form-input" 
+                  v-model="addressForm.city" 
+                  placeholder="请输入城市" 
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label">区/县</label>
+                <input 
+                  type="text" 
+                  class="form-input" 
+                  v-model="addressForm.district" 
+                  placeholder="请输入区/县" 
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">详细地址</label>
+              <textarea 
+                class="form-input form-textarea" 
+                v-model="addressForm.detailAddress" 
+                placeholder="请输入详细地址，如街道、门牌号等"
+                rows="3"
+              ></textarea>
+            </div>
+            <div class="checkbox-group">
+              <input 
+                type="checkbox" 
+                id="defaultAddress" 
+                class="checkbox-input" 
+                v-model="addressForm.isDefault" 
+              />
+              <label for="defaultAddress" class="checkbox-label">设为默认地址</label>
+            </div>
+            <div class="form-actions">
+              <button class="form-btn cancel" @click="cancelForm">取消</button>
+              <button class="form-btn submit" @click="saveAddress">{{ isEditing ? '保存修改' : '保存地址' }}</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -373,58 +420,64 @@ async function saveAddress() {
 
 <style scoped>
 .address-selector {
-  margin-bottom: 20px;
-  position: relative;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.address-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .address-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 400px;
-  overflow-y: auto;
-  padding-right: 5px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 .address-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 15px;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+  position: relative;
+  padding: 20px;
+  border-radius: 12px;
   background-color: #fff;
+  border: 1px solid #e5e5e5;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
 }
 
 .address-item:hover {
-  border-color: #40a9ff;
-  box-shadow: 0 4px 10px rgba(24, 144, 255, 0.1);
-  transform: translateY(-2px);
+  border-color: #4CAF50;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+  transform: translateY(-3px);
 }
 
 .address-item.active {
-  border-color: #1890ff;
-  background-color: #e6f7ff;
-  box-shadow: 0 4px 10px rgba(24, 144, 255, 0.15);
-}
-
-.address-info {
-  flex: 1;
+  border: 2px solid #4CAF50;
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.15);
+  background-color: #f8fff8;
 }
 
 .recipient-info {
-  margin-bottom: 8px;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .name {
-  font-weight: bold;
-  margin-right: 12px;
-  font-size: 15px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
 }
 
 .phone {
@@ -433,13 +486,16 @@ async function saveAddress() {
 }
 
 .default-tag {
-  background-color: #ff4d4f;
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: linear-gradient(135deg, #43A047, #66BB6A);
   color: white;
   font-size: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  margin-left: 10px;
-  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 0 12px 0 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 5px rgba(76, 175, 80, 0.2);
 }
 
 .address-detail {
@@ -450,84 +506,124 @@ async function saveAddress() {
 
 .address-actions {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
+  gap: 10px;
+  margin-top: 5px;
+  align-self: flex-end;
 }
 
 .edit-btn, .delete-btn {
-  padding: 5px 12px;
+  padding: 6px 12px;
+  border-radius: 6px;
   font-size: 13px;
-  border: none;
-  border-radius: 4px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  border: none;
 }
 
 .edit-btn {
-  background-color: #f0f0f0;
-  color: #333;
+  background-color: #f0f7ff;
+  color: #1976D2;
 }
 
 .edit-btn:hover {
-  background-color: #e0e0e0;
+  background-color: #e3f2fd;
+  box-shadow: 0 2px 5px rgba(25, 118, 210, 0.1);
 }
 
 .delete-btn {
-  background-color: #fff1f0;
-  color: #ff4d4f;
+  background-color: #fff0f0;
+  color: #f44336;
 }
 
 .delete-btn:hover {
-  background-color: #ffccc7;
-}
-
-.address-actions-bar {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
+  background-color: #ffebee;
+  box-shadow: 0 2px 5px rgba(244, 67, 54, 0.1);
 }
 
 .add-address-btn {
-  padding: 10px 20px;
-  background: linear-gradient(to right, #1890ff, #40a9ff);
-  color: white;
-  border: none;
-  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background-color: #f8f8f8;
+  border: 2px dashed #d0d0d0;
+  border-radius: 12px;
+  padding: 16px 20px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2);
   transition: all 0.3s;
+  width: 100%;
+  max-width: 200px;
+  font-size: 0;
+  position: relative;
+  overflow: hidden;
 }
 
 .add-address-btn:hover {
-  background: linear-gradient(to right, #0c80f0, #1890ff);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+  background-color: #e8f5e9;
+  border-color: #4CAF50;
   transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.1);
 }
 
-.empty-address {
-  padding: 40px 20px;
-  text-align: center;
-  color: #999;
-  border: 1px dashed #ddd;
-  border-radius: 8px;
-  background-color: #fafafa;
-  margin-bottom: 20px;
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: #4CAF50;
+  color: white;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 400;
+  transition: all 0.3s;
 }
 
+.add-address-btn:hover .btn-icon {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 5px rgba(76, 175, 80, 0.1);
+}
+
+.btn-text {
+  font-size: 15px;
+  font-weight: 500;
+  color: #555;
+  transition: all 0.3s;
+}
+
+.add-address-btn:hover .btn-text {
+  color: #4CAF50;
+}
+
+.address-actions-bar {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 20px;
+}
+
+/* Modal styles */
 .address-form-modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 1000;
-  animation: fadeIn 0.3s;
+  padding: 20px;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  animation: fadeIn 0.3s ease-out;
 }
 
 @keyframes fadeIn {
@@ -536,113 +632,218 @@ async function saveAddress() {
 }
 
 .modal-content {
+  position: relative;
   background-color: white;
-  padding: 25px;
-  border-radius: 8px;
-  width: 90%;
+  border-radius: 16px;
+  width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  animation: slideUp 0.3s;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease-out;
+  z-index: 1;
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
+  from { transform: translateY(30px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
-.modal-content h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title {
   font-size: 18px;
+  font-weight: 600;
   color: #333;
-  text-align: center;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  color: #777;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.address-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .form-group {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
+.form-label {
+  font-size: 14px;
   font-weight: 500;
-  color: #444;
-  font-size: 14px;
+  color: #555;
 }
 
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: all 0.3s;
+.form-input {
+  padding: 12px 15px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  transition: all 0.2s;
+  background-color: #f9f9f9;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
-  border-color: #40a9ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+.form-input:focus {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
   outline: none;
+  background-color: white;
 }
 
-.form-group textarea {
-  height: 80px;
+.form-textarea {
   resize: vertical;
+  min-height: 80px;
 }
 
-.form-group.checkbox {
+.region-selectors {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.checkbox-group {
   display: flex;
   align-items: center;
+  gap: 10px;
+  margin-top: 5px;
 }
 
-.form-group.checkbox input {
-  width: auto;
-  margin-right: 10px;
-}
-
-.form-group.checkbox label {
-  margin-bottom: 0;
+.checkbox-input {
+  width: 20px;
+  height: 20px;
+  accent-color: #4CAF50;
   cursor: pointer;
+}
+
+.checkbox-label {
+  font-size: 15px;
+  color: #555;
+  cursor: pointer;
+}
+
+.checkbox-label:hover {
+  color: #4CAF50;
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 25px;
+  gap: 15px;
+  margin-top: 10px;
 }
 
-.cancel-btn,
-.save-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
+.form-btn {
+  padding: 13px 25px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
+  transition: all 0.25s;
+  border: none;
 }
 
-.cancel-btn {
-  background-color: #f0f0f0;
-  color: #333;
+.form-btn.cancel {
+  background-color: #f5f5f5;
+  color: #555;
 }
 
-.cancel-btn:hover {
-  background-color: #e0e0e0;
+.form-btn.cancel:hover {
+  background-color: #e5e5e5;
 }
 
-.save-btn {
-  background: linear-gradient(to right, #1890ff, #40a9ff);
+.form-btn.submit {
+  background-color: #4CAF50;
   color: white;
-  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.2);
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.2);
 }
 
-.save-btn:hover {
-  background: linear-gradient(to right, #0c80f0, #1890ff);
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+.form-btn.submit:hover {
+  background-color: #43A047;
+  box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+  transform: translateY(-2px);
+}
+
+.empty-address {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  border: 1px dashed #ddd;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: 15px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
+.empty-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 5px;
+}
+
+.empty-subtext {
+  font-size: 14px;
+  color: #888;
+}
+
+@media (max-width: 768px) {
+  .address-list {
+    grid-template-columns: 1fr;
+  }
+  
+  .region-selectors {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-content {
+    max-width: 100%;
+    border-radius: 12px;
+  }
 }
 </style> 
