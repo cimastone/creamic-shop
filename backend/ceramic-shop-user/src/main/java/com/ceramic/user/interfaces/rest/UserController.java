@@ -10,7 +10,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.validation.Valid;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -107,85 +106,5 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
-    }
-
-    /**
-     * 添加收货地址
-     */
-    @PostMapping("/{userId}/addresses")
-    public ResponseEntity<AddressDTO> addAddress(
-            @PathVariable Long userId,
-            @Valid @RequestBody AddressRequest request) {
-        try {
-            AddressDTO addressDTO = userApplicationService.addAddress(userId, request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(addressDTO);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
-
-    /**
-     * 更新收货地址
-     */
-    @PutMapping("/{userId}/addresses/{addressId}")
-    public ResponseEntity<AddressDTO> updateAddress(
-            @PathVariable Long userId,
-            @PathVariable Long addressId,
-            @Valid @RequestBody AddressRequest request) {
-        try {
-            AddressDTO addressDTO = userApplicationService.updateAddress(userId, addressId, request);
-            return ResponseEntity.ok(addressDTO);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
-
-    /**
-     * 设置默认地址
-     */
-    @PutMapping("/{userId}/addresses/{addressId}/default")
-    public ResponseEntity<AddressDTO> setDefaultAddress(
-            @PathVariable Long userId,
-            @PathVariable Long addressId) {
-        try {
-            AddressDTO addressDTO = userApplicationService.setDefaultAddress(userId, addressId);
-            return ResponseEntity.ok(addressDTO);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
-
-    /**
-     * 删除收货地址
-     */
-    @DeleteMapping("/{userId}/addresses/{addressId}")
-    public ResponseEntity<Void> deleteAddress(
-            @PathVariable Long userId,
-            @PathVariable Long addressId) {
-        try {
-            userApplicationService.deleteAddress(userId, addressId);
-            return ResponseEntity.noContent().build();
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
-
-    /**
-     * 获取用户的所有收货地址
-     */
-    @GetMapping("/{userId}/addresses")
-    public ResponseEntity<List<AddressDTO>> getUserAddresses(@PathVariable Long userId) {
-        List<AddressDTO> addresses = userApplicationService.getUserAddresses(userId);
-        return ResponseEntity.ok(addresses);
-    }
-
-    /**
-     * 获取用户的默认收货地址
-     */
-    @GetMapping("/{userId}/addresses/default")
-    public ResponseEntity<AddressDTO> getUserDefaultAddress(@PathVariable Long userId) {
-        return userApplicationService.getUserDefaultAddress(userId)
-                .map(ResponseEntity::ok)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Default address not found"));
     }
 } 

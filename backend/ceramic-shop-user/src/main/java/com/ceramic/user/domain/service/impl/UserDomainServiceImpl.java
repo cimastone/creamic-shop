@@ -240,4 +240,22 @@ public class UserDomainServiceImpl implements UserDomainService {
     public Optional<Address> getUserDefaultAddress(UserId userId) {
         return userRepository.findDefaultAddressByUserId(userId);
     }
+
+    /**
+     * 根据ID获取地址
+     */
+    @Override
+    public Optional<Address> getAddressById(UserId userId, AddressId addressId) {
+        Optional<Address> addressOpt = userRepository.findAddressById(addressId);
+        
+        // 检查地址是否存在，且属于指定用户
+        if (addressOpt.isPresent()) {
+            Address address = addressOpt.get();
+            if (address.getUserId().getValue().equals(userId.getValue())) {
+                return addressOpt;
+            }
+        }
+        
+        return Optional.empty();
+    }
 } 

@@ -83,4 +83,9 @@ public interface UserDomainService {
      * 获取用户的默认收货地址
      */
     Optional<Address> getUserDefaultAddress(UserId userId);
+    
+    /**
+     * 根据ID获取地址
+     */
+    Optional<Address> getAddressById(UserId userId, AddressId addressId);
 } 
